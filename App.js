@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView } from 'react-native';
 
 // 子コンポーネント：商品カード
-function ProductCard({ name, price, onLikeChange }) {
+function ProductCard({ name, price, onLikeChange}) {
   const [liked, setLiked] = useState(false);
 
   const handlePress = () => {
@@ -39,10 +40,12 @@ export default function App() {
     { id: 2, name: 'レザーバッグ', price: '¥5,200' },
     { id: 3, name: 'スニーカー', price: '¥2,100' },
     { id: 4, name: 'ウールコート', price: '¥8,900' },
+    { id: 5, name: 'ウールコート', price: '¥7,500' },
+    { id: 6, name: 'ウールコート', price: '¥8,900' }
   ];
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>フリマ</Text>
       <Text style={styles.title}>{totalLikes}</Text>
       <View style={styles.row}>
@@ -57,17 +60,16 @@ export default function App() {
           />
         ))}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#f0f0f0',
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 16,
+    paddingTop: 60, // ステータスバーの分だけ余白を追加
   },
   title: {
     fontSize: 24,
@@ -75,10 +77,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     color: '#333',
   },
+  scrollview: {
+    backgroundColor: '#f5f5f5'
+  },
+  scrollcontent: {
+  },
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
+    width: '100%',
   },
   card: {
     backgroundColor: '#fff',
@@ -86,7 +94,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     gap: 8,
-    width: 150,
+    width: 160,
     elevation: 4,
   },
   image: {
