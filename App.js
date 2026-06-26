@@ -4,19 +4,52 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>フリマ</Text>
-
-      <View style={styles.card}>
-        <Image
-          source={{ uri: 'https://picsum.photos/200' }}
-          style={styles.image}
-        />
-        <Text style={styles.productName}>ビンテージデニムジャケット</Text>
-        <Text style={styles.price}>¥3,800</Text>
-        <TouchableOpacity style={styles.button} onPress={() => alert('いいねしました！')}>
-          <Text style={styles.buttonText}>いいね ♡</Text>
-        </TouchableOpacity>
+      <View style={styles.row}>
+       <View style={styles.card}>
+         <Image
+           source={{ uri: 'https://picsum.photos/200' }}
+           style={styles.image}
+         />
+         <Text style={styles.productName}>ビンテージデニムジャケット</Text>
+           <Text style={styles.price}>¥3,800</Text>
+         <TouchableOpacity style={styles.button} onPress={() => alert('いいねしました！')}>
+           <Text style={styles.buttonText}>いいね ♡</Text>
+         </TouchableOpacity>
+        </View>
+        <View style={styles.card}>
+         <Image
+           source={{ uri: 'https://picsum.photos/200' }}
+           style={styles.image}
+         />
+         <Text style={styles.productName}>ビンテージデニムジャケット</Text>
+           <Text style={styles.price}>¥3,800</Text>
+         <TouchableOpacity style={styles.button} onPress={() => alert('いいねしました！')}>
+           <Text style={styles.buttonText}>いいね ♡</Text>
+         </TouchableOpacity>
+        </View>
+        <View style={styles.card}>
+         <Image
+           source={{ uri: 'https://picsum.photos/200' }}
+           style={styles.image}
+         />
+         <Text style={styles.productName}>ビンテージデニムジャケット</Text>
+           <Text style={styles.price}>¥3,800</Text>
+         <TouchableOpacity style={styles.button} onPress={() => alert('いいねしました！')}>
+           <Text style={styles.buttonText}>いいね ♡</Text>
+         </TouchableOpacity>
+        </View>
+        <View style={styles.card}>
+         <Image
+           source={{ uri: 'https://picsum.photos/200' }}
+           style={styles.image}
+         />
+         <Text style={styles.productName}>ビンテージデニムジャケット</Text>
+           <Text style={styles.price}>¥3,800</Text>
+         <TouchableOpacity style={styles.button} onPress={() => alert('いいねしました！')}>
+           <Text style={styles.buttonText}>いいね ♡</Text>
+         </TouchableOpacity>
+        </View>
       </View>
-
     </View>
   );
 }
@@ -24,7 +57,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -40,15 +73,15 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     gap: 12,
-    width: 240,
+    width: 150,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
   },
   image: {
-    width: 200,
-    height: 200,
+    width: '100%',
+    aspectRatio: 1,
     borderRadius: 8,
   },
   productName: {
@@ -71,5 +104,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  row: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8,
   },
 });
