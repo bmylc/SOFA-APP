@@ -2,21 +2,19 @@ import { StyleSheet } from 'react-native'; // ← 追加
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    padding: 16,
+    backgroundColor: '#f0f0f0',
+    padding: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
     color: '#333',
+    padding: 8,
+    marginBottom: 8,
   },
   row: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
-    width: '100%',
+    marginBottom: 8,
   },
   card: {
     backgroundColor: '#fff',
@@ -24,7 +22,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     gap: 8,
-    width: 160,
+    flex: 1,
     elevation: 4,
   },
   image: {
@@ -41,17 +39,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 'bold',
     color: '#FF6B6B',
-  },
-  button: {
-    backgroundColor: '#FF6B6B',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: 'bold',
   },
 });
 
