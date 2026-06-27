@@ -1,13 +1,7 @@
 import { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import styles from '../styles/homestyles';
-
-const products = [
-  { id: 1, name: 'デニムジャケット', price: '¥3,800' },
-  { id: 2, name: 'レザーバッグ', price: '¥5,200' },
-  { id: 3, name: 'スニーカー', price: '¥2,100' },
-  { id: 4, name: 'ウールコート', price: '¥8,900' },
-];
+import products from '../products';
 
 export default function HomeScreen({ navigation }) {
   return (
@@ -20,6 +14,9 @@ export default function HomeScreen({ navigation }) {
             onPress={() => navigation.navigate('Detail', {
               name: item.name,
               price: item.price,
+              description: item.description,
+              seller: item.seller,
+              condition: item.condition,
             })}
           >
             <Image
