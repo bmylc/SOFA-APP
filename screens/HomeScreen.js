@@ -47,6 +47,7 @@ export default function HomeScreen({ navigation }) {
         <ProductCard
           item={item}
           onPress={() => navigation.navigate('Detail', {
+            id: item.id,
             name: item.name,
             price: item.price,
             description: item.description,

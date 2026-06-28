@@ -1,8 +1,24 @@
 import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native';
 import styles from '../styles/detailstyles';
+import { useFavorites } from '../context/FavoritesContext';
 
 export default function DetailScreen({ route }) {
-  const { name, price, description, seller, condition } = route.params;
+  const { name, price, description, seller, condition, id } = route.params;
+
+  // ① useFavorites からメソッドを取得
+  const { addFavorite, removeFavorite, isFavorite } = useFavorites();
+
+  // ② liked を定義
+  const liked = isFavorite(id);
+
+  // ③ toggleFavorite を定義
+  const toggleFavorite = () => {
+    if (liked) {
+      removeFavorite(id);
+    } else {
+      addFavorite({ id, name, price });
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -37,6 +53,16 @@ export default function DetailScreen({ route }) {
         <Text style={styles.sectionTitle}>商品説明</Text>
         <Text style={styles.description}>{description}</Text>
       </View>
+
+      {/* お気に入りボタン */}
+      <TouchableOpacity
+        style={[styles.favoriteButton, liked && styles.favoriteButtonActive]}
+        onPress={toggleFavorite}
+      >
+        <Text style={liked ? styles.favoriteActiveButtonText : styles.favoriteButtonText}>
+          {liked ? 'お気に入り済み ♥' : 'お気に入りに追加 ♡'}
+        </Text>
+      </TouchableOpacity>
 
       {/* 購入ボタン */}
       <TouchableOpacity

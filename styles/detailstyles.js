@@ -64,6 +64,29 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  favoriteButton: {
+   backgroundColor: '#fff',
+   margin: 16,
+   marginBottom: 0,
+   paddingVertical: 16,
+   borderRadius: 8,
+   alignItems: 'center',
+   borderWidth: 1,
+   borderColor: '#FF6B6B',
+ },
+ favoriteButtonActive: {
+   backgroundColor: '#FF6B6B',
+  },
+  favoriteButtonText: {
+   color: '#FF6B6B',
+   fontSize: 16,
+   fontWeight: 'bold',
+  },
+  favoriteActiveButtonText: {
+   color: '#fff',
+   fontSize: 16,
+   fontWeight: 'bold',
+  },
 });
 
 export default styles; // ← 追加
