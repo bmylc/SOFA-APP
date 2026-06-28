@@ -1,6 +1,6 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
@@ -13,12 +13,15 @@ const firebaseConfig = {
   appId: "1:45490144216:web:41294a20926b23b9b728ad"
 };
 
-const app = initializeApp(firebaseConfig);
+// 既に初期化済みの場合は既存のアプリを使う
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 export const db = getFirestore(app);
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+export const auth = getApps().length === 0
+  ? initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    })
+  : getAuth(app);
 
 console.log('Firebase接続確認:', db ? '接続済み' : '未接続');
 console.log('Auth接続確認:', auth ? '接続済み' : '未接続');

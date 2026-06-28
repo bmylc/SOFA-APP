@@ -18,7 +18,8 @@ export default function LoginScreen({ navigation }) {
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
-      Alert.alert('ログイン失敗', 'メールアドレスまたはパスワードが違います');
+      // エラーの詳細を表示（原因調査のため）
+      Alert.alert('ログイン失敗', error.message);
     } finally {
       setLoading(false);
     }

@@ -22,7 +22,8 @@ export default function RegisterScreen({ navigation }) {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
     } catch (error) {
-      Alert.alert('登録失敗', 'このメールアドレスはすでに使われています');
+      // エラーの詳細を表示（原因調査のため）
+      Alert.alert('登録失敗', error.message);
     } finally {
       setLoading(false);
     }

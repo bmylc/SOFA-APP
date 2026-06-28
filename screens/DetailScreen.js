@@ -31,7 +31,7 @@ export default function DetailScreen({ route }) {
 
       {/* 価格と商品名 */}
       <View style={styles.section}>
-        <Text style={styles.price}>{price}</Text>
+        <Text style={styles.price}>¥{price.toLocaleString()}</Text>
         <Text style={styles.name}>{name}</Text>
       </View>
 
