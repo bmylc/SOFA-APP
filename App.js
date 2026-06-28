@@ -1,13 +1,17 @@
-import './firebase';
+import { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, ActivityIndicator, View } from 'react-native';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase';
 import { FavoritesProvider } from './context/FavoritesContext';
 import HomeScreen from './screens/HomeScreen';
 import DetailScreen from './screens/DetailScreen';
 import SearchScreen from './screens/SearchScreen';
 import MyPageScreen from './screens/MyPageScreen';
+import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -16,11 +20,7 @@ const Tab = createBottomTabNavigator();
 function HomeStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ title: '商品一覧' }}
-      />
+      <Stack.Screen name="Home" component={HomeScreen} options={{ title: '商品一覧' }} />
       <Stack.Screen
         name="Detail"
         component={DetailScreen}
@@ -34,46 +34,83 @@ function HomeStack() {
   );
 }
 
+// 未ログイン時のスタック（ログイン・会員登録）
+function AuthStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ログイン後のタブ
+function MainTab() {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#FF6B6B',
+        tabBarInactiveTintColor: '#999',
+        headerShown: false,
+      }}
+    >
+      <Tab.Screen
+        name="HomeTab"
+        component={HomeStack}
+        options={{
+          title: 'ホーム',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        options={{
+          title: '検索',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔍</Text>,
+          headerShown: true,
+          headerTitle: '検索',
+        }}
+      />
+      <Tab.Screen
+        name="MyPage"
+        component={MyPageScreen}
+        options={{
+          title: 'マイページ',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text>,
+          headerShown: true,
+          headerTitle: 'マイページ',
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // ログイン状態を監視
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#FF6B6B" />
+      </View>
+    );
+  }
+
   return (
     <FavoritesProvider>
       <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={{
-            tabBarActiveTintColor: '#FF6B6B',
-            tabBarInactiveTintColor: '#999',
-            headerShown: false,
-          }}
-        >
-          <Tab.Screen
-            name="HomeTab"
-            component={HomeStack}
-            options={{
-              title: 'ホーム',
-              tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
-            }}
-          />
-          <Tab.Screen
-            name="Search"
-            component={SearchScreen}
-            options={{
-              title: '検索',
-              tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔍</Text>,
-              headerShown: true,
-              headerTitle: '検索',
-            }}
-          />
-          <Tab.Screen
-            name="MyPage"
-            component={MyPageScreen}
-            options={{
-              title: 'マイページ',
-              tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text>,
-              headerShown: true,
-              headerTitle: 'マイページ',
-            }}
-          />
-        </Tab.Navigator>
+        {user ? <MainTab /> : <AuthStack />}
       </NavigationContainer>
     </FavoritesProvider>
   );
