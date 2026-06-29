@@ -3,7 +3,7 @@ import styles from '../styles/detailstyles';
 import { useFavorites } from '../context/FavoritesContext';
 
 export default function DetailScreen({ route }) {
-  const { name, price, description, seller, condition, id } = route.params;
+  const { name, price, description, seller, condition, id, imageUrl } = route.params;
 
   // ① useFavorites からメソッドを取得
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
@@ -25,7 +25,7 @@ export default function DetailScreen({ route }) {
 
       {/* 商品画像 */}
       <Image
-        source={{ uri: 'https://picsum.photos/400' }}
+        source={{ uri: imageUrl || 'https://picsum.photos/400' }}
         style={styles.image}
       />
 
