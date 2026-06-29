@@ -13,6 +13,7 @@ import MyPageScreen from './screens/MyPageScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import SellScreen from './screens/SellScreen';
+import ChatScreen from './screens/ChatScreen';
 
 const Stack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -104,8 +105,17 @@ function MainScreen() {
           headerTintColor: '#333',
         })}
       />
-    </MainStack.Navigator>
-  );
+      <MainStack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={({ route }) => ({
+          headerShown: true,
+          title: route.params.productName,
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        })}
+      />
+    </MainStack.Navigator>  );
 }
 
 export default function App() {

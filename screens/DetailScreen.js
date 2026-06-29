@@ -1,5 +1,5 @@
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import { deleteDoc, doc } from 'firebase/firestore';
+import { deleteDoc, doc, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useFavorites } from '../context/FavoritesContext';
 
@@ -18,8 +18,31 @@ export default function DetailScreen({ route, navigation }) {
     }
   };
 
-  const handleDelete = () => {
-    Alert.alert(
+  // 出品者とのチャットを開く（なければ作成）
+  const handleContact = async () => {
+    const currentUser = auth.currentUser;
+    const chatId = [currentUser.uid, seller].sort().join('_') + '_' + id;
+
+    // チャットが既に存在するか確認
+    const chatRef = collection(db, 'chats');
+    const q = query(chatRef, where('chatId', '==', chatId));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      // 新規チャット作成
+      await addDoc(chatRef, {
+        chatId,
+        members: [currentUser.email, seller],
+        productId: id,
+        productName: name,
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    navigation.navigate('Chat', { chatId, productName: name, seller });
+  };
+
+  const handleDelete = () => {    Alert.alert(
       '出品取り消し',
       'この商品の出品を取り消しますか？',
       [
@@ -85,6 +108,13 @@ export default function DetailScreen({ route, navigation }) {
         </TouchableOpacity>
       ) : (
         <>
+          <TouchableOpacity
+            style={styles.contactButton}
+            onPress={handleContact}
+          >
+            <Text style={styles.contactButtonText}>出品者に連絡する</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.favoriteButton, liked && styles.favoriteButtonActive]}
             onPress={toggleFavorite}
@@ -159,8 +189,22 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 22,
   },
-  favoriteButton: {
+  contactButton: {
     backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 0,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#4ECDC4',
+  },
+  contactButtonText: {
+    color: '#4ECDC4',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  favoriteButton: {    backgroundColor: '#fff',
     margin: 16,
     marginBottom: 0,
     paddingVertical: 16,
