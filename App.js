@@ -97,6 +97,27 @@ function MainTab() {
   );
 }
 
+// タブの外側にも Detail を置き、どのタブからでも詳細画面に遷移できるようにする
+const MainStack = createNativeStackNavigator();
+
+function MainScreen() {
+  return (
+    <MainStack.Navigator screenOptions={{ headerShown: false }}>
+      <MainStack.Screen name="MainTab" component={MainTab} />
+      <MainStack.Screen
+        name="Detail"
+        component={DetailScreen}
+        options={({ route }) => ({
+          headerShown: true,
+          title: route.params.name,
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        })}
+      />
+    </MainStack.Navigator>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -121,7 +142,7 @@ export default function App() {
   return (
     <FavoritesProvider>
       <NavigationContainer>
-        {user ? <MainTab /> : <AuthStack />}
+        {user ? <MainScreen /> : <AuthStack />}
       </NavigationContainer>
     </FavoritesProvider>
   );
