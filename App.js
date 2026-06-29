@@ -12,6 +12,7 @@ import SearchScreen from './screens/SearchScreen';
 import MyPageScreen from './screens/MyPageScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import TestImageScreen from './screens/TestImageScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -80,6 +81,17 @@ function MainTab() {
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text>,
           headerShown: true,
           headerTitle: 'マイページ',
+        }}
+      />
+      {/* 画像アップロードの動作確認用（一時的） */}
+      <Tab.Screen
+        name="Test"
+        component={TestImageScreen}
+        options={{
+          title: 'テスト',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🧪</Text>,
+          headerShown: true,
+          headerTitle: 'テスト',
         }}
       />
     </Tab.Navigator>

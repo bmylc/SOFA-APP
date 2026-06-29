@@ -24,6 +24,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "フリマアプリが写真へのアクセスを求めています",
+          "cameraPermission": "フリマアプリがカメラへのアクセスを求めています"
+        }
+      ]
+    ]
   }
 }
