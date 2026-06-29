@@ -78,6 +78,7 @@ export default function SellScreen({ navigation }) {
         category,
         imageUrl,
         seller: auth.currentUser.email,
+        status: 'available', // available / reserved / sold
         createdAt: serverTimestamp(),
       });
 
@@ -151,7 +152,8 @@ export default function SellScreen({ navigation }) {
         </View>
       </ScrollView>
 
-      <Text style={styles.sectionTitle}>商品の状態</Text>      <View style={styles.conditionContainer}>
+      <Text style={styles.sectionTitle}>商品の状態</Text>
+      <View style={styles.conditionContainer}>
         {CONDITIONS.map((c) => (
           <TouchableOpacity
             key={c}

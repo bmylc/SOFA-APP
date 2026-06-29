@@ -111,10 +111,22 @@ export default function SearchScreen({ navigation }) {
                 imageUrl: item.imageUrl,
               })}
             >
-              <Image
-                source={{ uri: item.imageUrl || 'https://picsum.photos/200' }}
-                style={styles.image}
-              />
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: item.imageUrl || 'https://picsum.photos/200' }}
+                  style={styles.image}
+                />
+                {item.status === 'reserved' && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>売約済み</Text>
+                  </View>
+                )}
+                {item.status === 'sold' && (
+                  <View style={[styles.badge, styles.badgeSold]}>
+                    <Text style={styles.badgeText}>取引完了</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
               <Text style={styles.price}>¥{item.price.toLocaleString()}</Text>
             </TouchableOpacity>
@@ -173,8 +185,30 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
     flex: 1,
+    maxWidth: '49%', // 奇数個のとき最後の1枚が横幅いっぱいに広がらないように
     elevation: 2,
     gap: 6,
+  },
+  imageContainer: {
+    width: '100%',
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#FFE66D',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  badgeSold: {
+    backgroundColor: '#4ECDC4',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#333',
   },
   image: {
     width: '100%',

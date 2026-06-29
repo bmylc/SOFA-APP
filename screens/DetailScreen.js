@@ -1,14 +1,82 @@
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import { deleteDoc, doc, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { deleteDoc, doc, onSnapshot, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { useFavorites } from '../context/FavoritesContext';
 
 export default function DetailScreen({ route, navigation }) {
   const { id, name, price, description, seller, condition, imageUrl } = route.params;
+  const [status, setStatus] = useState('available');
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
 
   const liked = isFavorite(id);
   const isMyProduct = auth.currentUser.email === seller; // ← 自分の商品か判定
+
+  // ステータスをリアルタイムで監視（Hooks はコンポーネントの直下で呼ぶ）
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'products', id), (snap) => {
+      if (snap.exists()) {
+        setStatus(snap.data().status || 'available');
+      }
+    });
+    return unsubscribe;
+  }, [id]);
+
+  const handleContact = async () => {
+    const currentUser = auth.currentUser;
+
+    if (isMyProduct) {
+      // 出品者の場合：この商品のチャットを全件検索
+      const chatRef = collection(db, 'chats');
+      const q = query(chatRef, where('productId', '==', id));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        Alert.alert('お知らせ', 'まだ誰もチャットを開始していません');
+        return;
+      }
+
+      if (snapshot.docs.length === 1) {
+        // チャットが1件のみはそのまま移動
+        const chatData = snapshot.docs[0].data();
+        navigation.navigate('Chat', {
+          chatId: chatData.chatId,
+          productName: name,
+          seller,
+          productId: id,
+        });
+      } else {
+        // 複数の場合はオファー一覧へ
+        navigation.navigate('ChatList', {
+          productId: id,
+          productName: name,
+        });
+      }
+    } else {
+      // 買い手の場合：既存チャットを確認して、なければ新規作成
+      const chatId = [currentUser.uid, seller].sort().join('_') + '_' + id;
+      const chatRef = collection(db, 'chats');
+      const q = query(chatRef, where('chatId', '==', chatId));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        await addDoc(chatRef, {
+          chatId,
+          members: [currentUser.email, seller],
+          productId: id,
+          productName: name,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      navigation.navigate('Chat', {
+        chatId,
+        productName: name,
+        seller,
+        productId: id,
+      });
+    }
+  };
 
   const toggleFavorite = () => {
     if (liked) {
@@ -18,31 +86,8 @@ export default function DetailScreen({ route, navigation }) {
     }
   };
 
-  // 出品者とのチャットを開く（なければ作成）
-  const handleContact = async () => {
-    const currentUser = auth.currentUser;
-    const chatId = [currentUser.uid, seller].sort().join('_') + '_' + id;
-
-    // チャットが既に存在するか確認
-    const chatRef = collection(db, 'chats');
-    const q = query(chatRef, where('chatId', '==', chatId));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      // 新規チャット作成
-      await addDoc(chatRef, {
-        chatId,
-        members: [currentUser.email, seller],
-        productId: id,
-        productName: name,
-        createdAt: serverTimestamp(),
-      });
-    }
-
-    navigation.navigate('Chat', { chatId, productName: name, seller });
-  };
-
-  const handleDelete = () => {    Alert.alert(
+  const handleDelete = () => {
+    Alert.alert(
       '出品取り消し',
       'この商品の出品を取り消しますか？',
       [
@@ -79,6 +124,18 @@ export default function DetailScreen({ route, navigation }) {
         <Text style={styles.name}>{name}</Text>
       </View>
 
+      {/* 売約済みバナー */}
+      {status === 'reserved' && (
+        <View style={styles.reservedBanner}>
+          <Text style={styles.reservedBannerText}>🤝 売約済み・対面取引待ち</Text>
+        </View>
+      )}
+      {status === 'sold' && (
+        <View style={styles.soldBanner}>
+          <Text style={styles.soldBannerText}>✅ 取引完了</Text>
+        </View>
+      )}
+
       {/* 商品情報 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>商品情報</Text>
@@ -98,23 +155,24 @@ export default function DetailScreen({ route, navigation }) {
         <Text style={styles.description}>{description}</Text>
       </View>
 
-      {/* 自分の商品かどうかで表示を切り替え */}
+      {/* 自分の商品か・ステータスで表示を切り替え */}
       {isMyProduct ? (
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={handleDelete}
-        >
-          <Text style={styles.deleteButtonText}>出品を取り消す</Text>
-        </TouchableOpacity>
-      ) : (
         <>
           <TouchableOpacity
             style={styles.contactButton}
             onPress={handleContact}
           >
+            <Text style={styles.contactButtonText}>チャットを確認する</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+            <Text style={styles.deleteButtonText}>出品を取り消す</Text>
+          </TouchableOpacity>
+        </>
+      ) : status === 'available' ? (
+        <>
+          <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
             <Text style={styles.contactButtonText}>出品者に連絡する</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.favoriteButton, liked && styles.favoriteButtonActive]}
             onPress={toggleFavorite}
@@ -123,16 +181,16 @@ export default function DetailScreen({ route, navigation }) {
               {liked ? 'お気に入り済み ♥' : 'お気に入りに追加 ♡'}
             </Text>
           </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.buyButton}
-            onPress={() => alert('購入手続きへ')}
-          >
-            <Text style={styles.buyButtonText}>購入する</Text>
-          </TouchableOpacity>
         </>
+      ) : (
+        <View style={styles.reservedMessage}>
+          <Text style={styles.reservedMessageText}>
+            {status === 'reserved'
+              ? 'この商品は現在売約済みです'
+              : 'この商品の取引は完了しています'}
+          </Text>
+        </View>
       )}
-
     </ScrollView>
   );
 }
@@ -189,6 +247,37 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 22,
   },
+  reservedBanner: {
+    backgroundColor: '#FFE66D',
+    padding: 12,
+    alignItems: 'center',
+  },
+  reservedBannerText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  soldBanner: {
+    backgroundColor: '#4ECDC4',
+    padding: 12,
+    alignItems: 'center',
+  },
+  soldBannerText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  reservedMessage: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  reservedMessageText: {
+    fontSize: 14,
+    color: '#999',
+  },
   contactButton: {
     backgroundColor: '#fff',
     margin: 16,
@@ -204,7 +293,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  favoriteButton: {    backgroundColor: '#fff',
+  favoriteButton: {
+    backgroundColor: '#fff',
     margin: 16,
     marginBottom: 0,
     paddingVertical: 16,
@@ -223,18 +313,6 @@ const styles = StyleSheet.create({
   },
   favoriteButtonTextActive: {
     color: '#fff',
-  },
-  buyButton: {
-    backgroundColor: '#FF6B6B',
-    margin: 16,
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  buyButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
   },
   deleteButton: {
     backgroundColor: '#fff',

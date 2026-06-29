@@ -14,6 +14,7 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import SellScreen from './screens/SellScreen';
 import ChatScreen from './screens/ChatScreen';
+import ChatListScreen from './screens/ChatListScreen';
 
 const Stack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -115,7 +116,18 @@ function MainScreen() {
           headerTintColor: '#333',
         })}
       />
-    </MainStack.Navigator>  );
+      <MainStack.Screen
+        name="ChatList"
+        component={ChatListScreen}
+        options={{
+          headerShown: true,
+          title: 'オファー一覧',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        }}
+      />
+    </MainStack.Navigator>
+  );
 }
 
 export default function App() {
