@@ -15,11 +15,22 @@ const CONDITIONS = [
   '傷や汚れあり',
 ];
 
+const CATEGORIES = [
+  'すべて',
+  'レディース',
+  'メンズ',
+  'バッグ',
+  'シューズ',
+  'アクセサリー',
+  'その他',
+];
+
 export default function SellScreen({ navigation }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [condition, setCondition] = useState(CONDITIONS[0]);
+  const [category, setCategory] = useState(CATEGORIES[1]);
   const [imageUri, setImageUri] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -64,6 +75,7 @@ export default function SellScreen({ navigation }) {
         price: parseInt(price),
         description,
         condition,
+        category,
         imageUrl,
         seller: auth.currentUser.email,
         createdAt: serverTimestamp(),
@@ -78,6 +90,7 @@ export default function SellScreen({ navigation }) {
             setPrice('');
             setDescription('');
             setCondition(CONDITIONS[0]);
+            setCategory(CATEGORIES[1]);
             setImageUri(null);
             setImageBase64(null);
             navigation.goBack();
@@ -121,8 +134,24 @@ export default function SellScreen({ navigation }) {
         keyboardType="numeric"
       />
 
-      <Text style={styles.sectionTitle}>商品の状態</Text>
-      <View style={styles.conditionContainer}>
+      <Text style={styles.sectionTitle}>カテゴリ</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {CATEGORIES.filter(c => c !== 'すべて').map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[styles.categoryButton, category === c && styles.categoryButtonActive]}
+              onPress={() => setCategory(c)}
+            >
+              <Text style={[styles.categoryText, category === c && styles.categoryTextActive]}>
+                {c}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      <Text style={styles.sectionTitle}>商品の状態</Text>      <View style={styles.conditionContainer}>
         {CONDITIONS.map((c) => (
           <TouchableOpacity
             key={c}
@@ -228,6 +257,26 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   conditionTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  categoryButton: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 0.5,
+    borderColor: '#ddd',
+  },
+  categoryButtonActive: {
+    backgroundColor: '#FF6B6B',
+    borderColor: '#FF6B6B',
+  },
+  categoryText: {
+    fontSize: 13,
+    color: '#333',
+  },
+  categoryTextActive: {
     color: '#fff',
     fontWeight: 'bold',
   },

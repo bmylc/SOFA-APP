@@ -15,22 +15,14 @@ import RegisterScreen from './screens/RegisterScreen';
 import SellScreen from './screens/SellScreen';
 
 const Stack = createNativeStackNavigator();
+const MainStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// ホームのスタックナビゲーター
+// ホームのスタックナビゲーター（Detail は MainScreen 側に一本化）
 function HomeStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: '商品一覧' }} />
-      <Stack.Screen
-        name="Detail"
-        component={DetailScreen}
-        options={({ route }) => ({
-          title: route.params.name,
-          headerStyle: { backgroundColor: '#fff' },
-          headerTintColor: '#333',
-        })}
-      />
     </Stack.Navigator>
   );
 }
@@ -97,9 +89,7 @@ function MainTab() {
   );
 }
 
-// タブの外側にも Detail を置き、どのタブからでも詳細画面に遷移できるようにする
-const MainStack = createNativeStackNavigator();
-
+// タブの外側に Detail を置き、どのタブ（ホーム・検索・マイページ）からでも詳細画面に遷移できるようにする
 function MainScreen() {
   return (
     <MainStack.Navigator screenOptions={{ headerShown: false }}>
