@@ -1,4 +1,5 @@
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context'; // ← 追加
 import { deleteDoc, doc, onSnapshot, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
@@ -7,6 +8,8 @@ import { useFavorites } from '../context/FavoritesContext';
 export default function DetailScreen({ route, navigation }) {
   const { id, name, price, description, seller, condition, imageUrl } = route.params;
   const [status, setStatus] = useState('available');
+  const [hasChat, setHasChat] = useState(false);   // 売約済みでも自分のチャットがあれば確認できる
+  const [chatInfo, setChatInfo] = useState(null);
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
 
   const liked = isFavorite(id);
@@ -20,6 +23,23 @@ export default function DetailScreen({ route, navigation }) {
       }
     });
     return unsubscribe;
+  }, [id]);
+
+  // 自分（買い手）が既にこの商品のチャットを持っているか確認
+  useEffect(() => {
+    if (isMyProduct) return;
+    const checkChat = async () => {
+      const currentUser = auth.currentUser;
+      const myChatId = [currentUser.uid, seller].sort().join('_') + '_' + id;
+      const chatRef = collection(db, 'chats');
+      const q = query(chatRef, where('chatId', '==', myChatId));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        setHasChat(true);
+        setChatInfo(snapshot.docs[0].data());
+      }
+    };
+    checkChat();
   }, [id]);
 
   const handleContact = async () => {
@@ -111,91 +131,102 @@ export default function DetailScreen({ route, navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* 商品画像 */}
-      <Image
-        source={{ uri: imageUrl || 'https://picsum.photos/400' }}
-        style={styles.image}
-      />
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* 商品画像 */}
+        <Image
+          source={{ uri: imageUrl || 'https://picsum.photos/400' }}
+          style={styles.image}
+        />
 
-      {/* 価格と商品名 */}
-      <View style={styles.section}>
-        <Text style={styles.price}>¥{price.toLocaleString()}</Text>
-        <Text style={styles.name}>{name}</Text>
-      </View>
-
-      {/* 売約済みバナー */}
-      {status === 'reserved' && (
-        <View style={styles.reservedBanner}>
-          <Text style={styles.reservedBannerText}>🤝 売約済み・対面取引待ち</Text>
+        {/* 価格と商品名 */}
+        <View style={styles.section}>
+          <Text style={styles.price}>¥{price.toLocaleString()}</Text>
+          <Text style={styles.name}>{name}</Text>
         </View>
-      )}
-      {status === 'sold' && (
-        <View style={styles.soldBanner}>
-          <Text style={styles.soldBannerText}>✅ 取引完了</Text>
-        </View>
-      )}
 
-      {/* 商品情報 */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>商品情報</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>商品の状態</Text>
-          <Text style={styles.infoValue}>{condition}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>出品者</Text>
-          <Text style={styles.infoValue}>{seller}</Text>
-        </View>
-      </View>
+        {/* 売約済みバナー */}
+        {status === 'reserved' && (
+          <View style={styles.reservedBanner}>
+            <Text style={styles.reservedBannerText}>🤝 売約済み・対面取引待ち</Text>
+          </View>
+        )}
+        {status === 'sold' && (
+          <View style={styles.soldBanner}>
+            <Text style={styles.soldBannerText}>✅ 取引完了</Text>
+          </View>
+        )}
 
-      {/* 商品説明 */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>商品説明</Text>
-        <Text style={styles.description}>{description}</Text>
-      </View>
+        {/* 商品情報 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>商品情報</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>商品の状態</Text>
+            <Text style={styles.infoValue}>{condition}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>出品者</Text>
+            <Text style={styles.infoValue}>{seller}</Text>
+          </View>
+        </View>
 
-      {/* 自分の商品か・ステータスで表示を切り替え */}
-      {isMyProduct ? (
-        <>
-          <TouchableOpacity
-            style={styles.contactButton}
-            onPress={handleContact}
-          >
+        {/* 商品説明 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>商品説明</Text>
+          <Text style={styles.description}>{description}</Text>
+        </View>
+
+        {/* 自分の商品か・ステータスで表示を切り替え */}
+        {isMyProduct ? (
+          <>
+            <TouchableOpacity
+              style={styles.contactButton}
+              onPress={handleContact}
+            >
+              <Text style={styles.contactButtonText}>チャットを確認する</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+              <Text style={styles.deleteButtonText}>出品を取り消す</Text>
+            </TouchableOpacity>
+          </>
+        ) : status === 'available' ? (
+          <>
+            <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+              <Text style={styles.contactButtonText}>出品者に連絡する</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.favoriteButton, liked && styles.favoriteButtonActive]}
+              onPress={toggleFavorite}
+            >
+              <Text style={[styles.favoriteButtonText, liked && styles.favoriteButtonTextActive]}>
+                {liked ? 'お気に入り済み ♥' : 'お気に入りに追加 ♡'}
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : hasChat ? (
+          // 売約済みでもチャットがあれば確認できる
+          <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
             <Text style={styles.contactButtonText}>チャットを確認する</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-            <Text style={styles.deleteButtonText}>出品を取り消す</Text>
-          </TouchableOpacity>
-        </>
-      ) : status === 'available' ? (
-        <>
-          <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-            <Text style={styles.contactButtonText}>出品者に連絡する</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.favoriteButton, liked && styles.favoriteButtonActive]}
-            onPress={toggleFavorite}
-          >
-            <Text style={[styles.favoriteButtonText, liked && styles.favoriteButtonTextActive]}>
-              {liked ? 'お気に入り済み ♥' : 'お気に入りに追加 ♡'}
+        ) : (
+          <View style={styles.reservedMessage}>
+            <Text style={styles.reservedMessageText}>
+              {status === 'reserved'
+                ? 'この商品は現在売約済みです'
+                : 'この商品の取引は完了しています'}
             </Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <View style={styles.reservedMessage}>
-          <Text style={styles.reservedMessageText}>
-            {status === 'reserved'
-              ? 'この商品は現在売約済みです'
-              : 'この商品の取引は完了しています'}
-          </Text>
-        </View>
-      )}
-    </ScrollView>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   container: {
     backgroundColor: '#f5f5f5',
     paddingBottom: 32,

@@ -7,7 +7,7 @@ import {
 import {
   collection, addDoc, onSnapshot,
   orderBy, query, serverTimestamp,
-  doc, updateDoc, where, getDocs
+  doc, updateDoc, where, getDocs, getDoc
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
@@ -33,6 +33,7 @@ export default function ChatScreen({ route }) {
   const [productStatus, setProductStatus] = useState('available');
   const [checklistVisible, setChecklistVisible] = useState(false);
   const [checklist, setChecklist] = useState(INITIAL_CHECKLIST);
+  const [userNames, setUserNames] = useState({}); // ← メールアドレス→氏名の対応表
   const flatListRef = useRef(null);
   const isMe = (senderId) => senderId === auth.currentUser.email;
   const isSeller = auth.currentUser.email === seller;
@@ -69,6 +70,41 @@ export default function ChatScreen({ route }) {
     });
     return unsubscribe;
   }, [chatId]);
+
+  // チャットメンバーの氏名を取得（Web 登録時に users コレクションへ保存された name）
+  useEffect(() => {
+    const fetchUserNames = async () => {
+      const chatRef = collection(db, 'chats');
+      const q = query(chatRef, where('chatId', '==', chatId));
+      const snapshot = await getDocs(q);
+
+      if (!snapshot.empty) {
+        const members = snapshot.docs[0].data().members || [];
+        const names = {};
+
+        for (const email of members) {
+          // メールアドレスからユーザーを検索
+          const usersRef = collection(db, 'users');
+          const userQuery = query(usersRef, where('email', '==', email));
+          const userSnapshot = await getDocs(userQuery);
+
+          if (!userSnapshot.empty) {
+            names[email] = userSnapshot.docs[0].data().name;
+          } else {
+            names[email] = email; // 見つからない場合はメールアドレスのまま
+          }
+        }
+        setUserNames(names);
+      }
+    };
+    fetchUserNames();
+  }, [chatId]);
+
+  // 表示名を取得するヘルパー関数
+  const getDisplayName = (senderId) => {
+    if (senderId === 'system') return 'システム';
+    return userNames[senderId] || senderId;
+  };
 
   // 商品ステータスをリアルタイムで監視
   useEffect(() => {
@@ -228,7 +264,9 @@ export default function ChatScreen({ route }) {
       <View style={styles.productBar}>
         <View style={styles.productBarLeft}>
           <Text style={styles.productBarText}>商品：{productName}</Text>
-          <Text style={styles.productBarSeller}>出品者：{seller}</Text>
+          <Text style={styles.productBarSeller}>
+            出品者：{userNames[seller] || seller}
+          </Text>
         </View>
         {/* 出品者のみボタンを表示 */}
         {isSeller && productStatus === 'available' && (
@@ -327,7 +365,7 @@ export default function ChatScreen({ route }) {
               isMe(item.senderId) ? styles.messageRowMe : styles.messageRowOther
             ]}>
               {!isMe(item.senderId) && (
-                <Text style={styles.senderName}>{item.senderId}</Text>
+                <Text style={styles.senderName}>{getDisplayName(item.senderId)}</Text>
               )}
               <View style={[
                 styles.bubble,
