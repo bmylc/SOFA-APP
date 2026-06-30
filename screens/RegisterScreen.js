@@ -1,70 +1,62 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
-import styles from '../styles/registerstyles';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Linking } from 'react-native';
 
-export default function RegisterScreen({ navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+const REGISTER_URL = 'https://example.com/register'; // ← あとで変更するURL
 
-  const handleRegister = async () => {
-    if (!email || !password) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください');
-      return;
-    }
-    if (password.length < 6) {
-      Alert.alert('エラー', 'パスワードは6文字以上にしてください');
-      return;
-    }
-    setLoading(true);
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-      // エラーの詳細を表示（原因調査のため）
-      Alert.alert('登録失敗', error.message);
-    } finally {
-      setLoading(false);
+export default function RegisterScreen() {
+  const handleOpenBrowser = async () => {
+    const supported = await Linking.canOpenURL(REGISTER_URL);
+    if (supported) {
+      await Linking.openURL(REGISTER_URL);
     }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>会員登録</Text>
+      <Text style={styles.description}>
+        会員登録はブラウザから行います。{'\n'}
+        下のボタンをタップして登録してください。
+      </Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="メールアドレス"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="パスワード（6文字以上）"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleRegister}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? '処理中...' : '登録する'}
-        </Text>
+      <TouchableOpacity style={styles.button} onPress={handleOpenBrowser}>
+        <Text style={styles.buttonText}>ブラウザで登録する →</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity
-        onPress={() => navigation.navigate('Login')}
-      >
-        <Text style={styles.link}>すでにアカウントをお持ちの方はこちら</Text>
-      </TouchableOpacity>
-
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    padding: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  button: {
+    backgroundColor: '#FF6B6B',
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});

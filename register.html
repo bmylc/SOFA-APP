@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>会員登録</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-text {
+      font-size: 28px;
+      font-weight: 700;
+      color: #FF6B6B;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-sub {
+      font-size: 13px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 6px;
+    }
+
+    label .required {
+      color: #FF6B6B;
+      margin-left: 4px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #333;
+      background: #fafafa;
+      transition: border-color 0.2s;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus {
+      border-color: #FF6B6B;
+      background: #fff;
+    }
+
+    input::placeholder {
+      color: #bbb;
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select-wrapper::after {
+      content: '▾';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      pointer-events: none;
+      font-size: 14px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 5px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #f0f0f0;
+      margin: 24px 0;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: #FF6B6B;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.5px;
+    }
+
+    .submit-btn:hover {
+      background: #ff5252;
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .submit-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #999;
+    }
+
+    .login-link a {
+      color: #FF6B6B;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #a5d6a7;
+    }
+
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+    }
+
+    .password-wrapper {
+      position: relative;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 13px;
+      padding: 4px;
+    }
+
+    .toggle-password:hover {
+      color: #FF6B6B;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        padding: 32px 20px;
+      }
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-text">フリマ</div>
+    <div class="logo-sub">大学コミュニティ限定フリマアプリ</div>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <form id="registerForm" onsubmit="handleSubmit(event)">
+
+    <!-- 氏名 -->
+    <div class="form-group">
+      <label>氏名<span class="required">*</span></label>
+      <input
+        type="text"
+        id="name"
+        placeholder="山田 太郎"
+        required
+      />
+    </div>
+
+    <!-- メールアドレス -->
+    <div class="form-group">
+      <label>メールアドレス<span class="required">*</span></label>
+      <input
+        type="email"
+        id="email"
+        placeholder="example@univ.ac.jp"
+        required
+      />
+      <p class="hint">大学のメールアドレスを推奨します</p>
+    </div>
+
+    <!-- パスワード -->
+    <div class="form-group">
+      <label>パスワード<span class="required">*</span></label>
+      <div class="password-wrapper">
+        <input
+          type="password"
+          id="password"
+          placeholder="6文字以上"
+          minlength="6"
+          required
+        />
+        <button type="button" class="toggle-password" onclick="togglePassword('password', this)">表示</button>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 所属 -->
+    <div class="form-group">
+      <label>所属<span class="required">*</span></label>
+      <div class="select-wrapper">
+        <select id="affiliation" required onchange="handleAffiliationChange()">
+          <option value="" disabled selected>選択してください</option>
+          <option value="student">学生</option>
+          <option value="professor">教授・教職員</option>
+          <option value="ob">OB・OG</option>
+          <option value="applicant">受験生</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 学部・学科（学生・OBのみ表示） -->
+    <div class="form-group" id="departmentGroup" style="display:none;">
+      <label>学部・学科<span class="required">*</span></label>
+      <div class="row">
+        <div class="select-wrapper">
+          <select id="faculty">
+            <option value="" disabled selected>学部</option>
+            <option value="文学部">文学部</option>
+            <option value="法学部">法学部</option>
+            <option value="経済学部">経済学部</option>
+            <option value="理工学部">理工学部</option>
+            <option value="医学部">医学部</option>
+            <option value="工学部">工学部</option>
+            <option value="教育学部">教育学部</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <input
+          type="text"
+          id="department"
+          placeholder="学科名（任意）"
+        />
+      </div>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">
+      登録する
+    </button>
+
+  </form>
+
+  <p class="login-link">
+    すでにアカウントをお持ちの方は<a href="#">ログイン</a>
+  </p>
+</div>
+
+<script>
+  function handleAffiliationChange() {
+    const affiliation = document.getElementById('affiliation').value;
+    const departmentGroup = document.getElementById('departmentGroup');
+    const faculty = document.getElementById('faculty');
+
+    if (affiliation === 'student' || affiliation === 'ob') {
+      departmentGroup.style.display = 'block';
+      faculty.required = true;
+    } else {
+      departmentGroup.style.display = 'none';
+      faculty.required = false;
+    }
+  }
+
+  function togglePassword(id, btn) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '隠す';
+    } else {
+      input.type = 'password';
+      btn.textContent = '表示';
+    }
+  }
+
+  function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = 'message ' + type;
+    msg.style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '登録中...';
+
+    const data = {
+      name: document.getElementById('name').value,
+      email: document.getElementById('email').value,
+      password: document.getElementById('password').value,
+      affiliation: document.getElementById('affiliation').value,
+      faculty: document.getElementById('faculty').value || '',
+      department: document.getElementById('department').value || '',
+    };
+
+    // GASのdoPost関数に送信
+    google.script.run
+      .withSuccessHandler(function(result) {
+        btn.disabled = false;
+        btn.textContent = '登録する';
+        if (result.success) {
+          showMessage('登録が完了しました！アプリでログインしてください。', 'success');
+          document.getElementById('registerForm').reset();
+          document.getElementById('departmentGroup').style.display = 'none';
+        } else {
+          showMessage(result.message || '登録に失敗しました。もう一度お試しください。', 'error');
+        }
+      })
+      .withFailureHandler(function(error) {
+        btn.disabled = false;
+        btn.textContent = '登録する';
+        showMessage('エラーが発生しました: ' + error.message, 'error');
+      })
+      .registerUser(data);
+  }
+</script>
+
+</body>
+</html>
