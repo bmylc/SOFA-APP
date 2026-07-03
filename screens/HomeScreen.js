@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../firebase';
 
-function ProductCard({ item, onPress }) {
+// memo で囲んで、props が変わらないカードは再描画しない
+const ProductCard = memo(function ProductCard({ item, onPress }) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.imageContainer}>
@@ -26,17 +27,16 @@ function ProductCard({ item, onPress }) {
       <Text style={styles.price}>¥{item.price.toLocaleString()}</Text>
     </TouchableOpacity>
   );
-}
+});
 
 export default function HomeScreen({ navigation }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // createdAt がないドキュメントは orderBy で除外されるため一旦外す
     const q = query(
-      collection(db, 'products')
-      // orderBy('createdAt', 'desc')
+      collection(db, 'products'),
+      orderBy('createdAt', 'desc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -50,6 +50,19 @@ export default function HomeScreen({ navigation }) {
 
     return unsubscribe;
   }, []);
+
+  // Hooks は if (loading) return より前に書く
+  const handlePressProduct = useCallback((item) => {
+    navigation.navigate('Detail', {
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      description: item.description,
+      seller: item.seller,
+      condition: item.condition,
+      imageUrl: item.imageUrl,
+    });
+  }, [navigation]);
 
   if (loading) {
     return (
@@ -72,17 +85,13 @@ export default function HomeScreen({ navigation }) {
       renderItem={({ item }) => (
         <ProductCard
           item={item}
-          onPress={() => navigation.navigate('Detail', {
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            description: item.description,
-            seller: item.seller,
-            condition: item.condition,
-            imageUrl: item.imageUrl,
-          })}
+          onPress={() => handlePressProduct(item)}
         />
       )}
+      windowSize={5}
+      maxToRenderPerBatch={10}
+      initialNumToRender={10}
+      removeClippedSubviews={true}
     />
   );
 }
@@ -115,8 +124,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     flex: 1,
-    maxWidth: '49%', // 奇数個のとき最後の1枚が横幅いっぱいに広がらないように
     elevation: 4,
+    maxWidth: '49%',
+  },
+  image: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 8,
+  },
+  productName: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  price: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#FF6B6B',
   },
   imageContainer: {
     width: '100%',
@@ -138,20 +162,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
     color: '#333',
-  },
-  image: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 8,
-  },
-  productName: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  price: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#FF6B6B',
   },
 });
