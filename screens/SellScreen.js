@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { uploadImage } from '../utils/uploadImage';
+import { showError } from '../utils/errorHandler';
 
 const CONDITIONS = [
   '未使用に近い',
@@ -56,14 +57,23 @@ export default function SellScreen({ navigation }) {
   };
 
   const handleSell = async () => {
-    if (!name || !price || !description || !imageBase64) {
-      Alert.alert('エラー', 'すべての項目を入力してください');
+    if (!name.trim()) {
+      Alert.alert('エラー', '商品名を入力してください');
       return;
     }
-    if (isNaN(price)) {
-      Alert.alert('エラー', '価格は数字で入力してください');
+    if (!price || isNaN(price) || parseInt(price) <= 0) {
+      Alert.alert('エラー', '正しい価格を入力してください');
       return;
     }
+    if (!description.trim()) {
+      Alert.alert('エラー', '商品説明を入力してください');
+      return;
+    }
+    if (!imageBase64) {
+      Alert.alert('エラー', '商品画像を選択してください');
+      return;
+    }
+
     setLoading(true);
     try {
       // 画像をCloudinaryにアップロード
@@ -71,9 +81,9 @@ export default function SellScreen({ navigation }) {
 
       // Firestoreに商品データを保存
       await addDoc(collection(db, 'products'), {
-        name,
+        name: name.trim(),
         price: parseInt(price),
-        description,
+        description: description.trim(),
         condition,
         category,
         imageUrl,
@@ -99,7 +109,7 @@ export default function SellScreen({ navigation }) {
         }
       ]);
     } catch (error) {
-      Alert.alert('エラー', '出品に失敗しました: ' + error.message);
+      showError(error, handleSell); // ← 再試行ボタン付きエラー
     } finally {
       setLoading(false);
     }

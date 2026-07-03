@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
+import { showError } from '../utils/errorHandler';
 import styles from '../styles/loginstyles';
 
 export default function LoginScreen({ navigation }) {
@@ -10,16 +11,19 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください');
+    if (!email.trim()) {
+      Alert.alert('エラー', 'メールアドレスを入力してください');
+      return;
+    }
+    if (!password) {
+      Alert.alert('エラー', 'パスワードを入力してください');
       return;
     }
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
     } catch (error) {
-      // エラーの詳細を表示（原因調査のため）
-      Alert.alert('ログイン失敗', error.message);
+      showError(error); // ← 日本語エラーメッセージ
     } finally {
       setLoading(false);
     }
