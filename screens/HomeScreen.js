@@ -61,6 +61,8 @@ export default function HomeScreen({ navigation }) {
       seller: item.seller,
       condition: item.condition,
       imageUrl: item.imageUrl,
+      meetupLocation: item.meetupLocation || '未設定', // ← 追加
+      meetupDetail: item.meetupDetail || '',            // ← 追加
     });
   }, [navigation]);
 

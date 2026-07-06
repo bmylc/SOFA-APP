@@ -9,6 +9,7 @@ import { db, auth } from '../firebase';
 import { uploadImage } from '../utils/uploadImage';
 import { showError } from '../utils/errorHandler';
 import { validatePrice, validateProductName, validateDescription } from '../utils/validators';
+import locations from '../data/locations.json';
 
 const CONDITIONS = [
   '未使用に近い',
@@ -36,6 +37,20 @@ export default function SellScreen({ navigation }) {
   const [imageUri, setImageUri] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [meetupLocation, setMeetupLocation] = useState(null); // ← 選択した場所
+  const [meetupDetail, setMeetupDetail] = useState('');       // ← 自由記述
+  const [showOtherInput, setShowOtherInput] = useState(false);
+
+  // 場所選択ハンドラー
+  const handleLocationSelect = (loc) => {
+    setMeetupLocation(loc);
+    if (loc.name === 'その他') {
+      setShowOtherInput(true);
+    } else {
+      setShowOtherInput(false);
+      setMeetupDetail('');
+    }
+  };
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -72,6 +87,11 @@ export default function SellScreen({ navigation }) {
       return;
     }
 
+    if (!meetupLocation) {
+      Alert.alert('エラー', '受け渡し場所を選択してください');
+      return;
+    }
+
     setLoading(true);
     try {
       // 画像をCloudinaryにアップロード
@@ -87,6 +107,8 @@ export default function SellScreen({ navigation }) {
         imageUrl,
         seller: auth.currentUser.email,
         status: 'available', // available / reserved / sold
+        meetupLocation: meetupLocation.name,   // ← 場所名
+        meetupDetail: meetupDetail.trim(),      // ← 自由記述
         createdAt: serverTimestamp(),
       });
 
@@ -102,6 +124,9 @@ export default function SellScreen({ navigation }) {
             setCategory(CATEGORIES[1]);
             setImageUri(null);
             setImageBase64(null);
+            setMeetupLocation(null);
+            setMeetupDetail('');
+            setShowOtherInput(false);
             navigation.goBack();
           }
         }
@@ -184,6 +209,57 @@ export default function SellScreen({ navigation }) {
         multiline
         numberOfLines={4}
       />
+
+      {/* 受け渡し場所（全ての場所をフラットにボタンで並べる） */}
+      <Text style={styles.sectionTitle}>
+        受け渡し希望場所
+      </Text>
+
+      <View style={styles.locationButtons}>
+        {locations.locations.map((loc) => (
+          <TouchableOpacity
+            key={loc.id}
+            style={[
+              styles.locationButton,
+              meetupLocation?.id === loc.id && styles.locationButtonActive
+            ]}
+            onPress={() => handleLocationSelect(loc)}
+          >
+            <Text style={[
+              styles.locationButtonText,
+              meetupLocation?.id === loc.id && styles.locationButtonTextActive
+            ]}>
+              {loc.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* その他を選んだときだけテキストボックス */}
+      {showOtherInput && (
+        <View style={styles.otherInputContainer}>
+          <Text style={styles.sectionTitle}>場所を入力してください</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="例：大宮駅"
+            value={meetupDetail}
+            onChangeText={setMeetupDetail}
+          />
+        </View>
+      )}
+
+      {/* その他以外のときは任意の詳細入力 */}
+      {meetupLocation && !showOtherInput && (
+        <View style={styles.otherInputContainer}>
+          <Text style={styles.sectionTitle}>詳細（任意）</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="例：1階ロビー、正面入口付近"
+            value={meetupDetail}
+            onChangeText={setMeetupDetail}
+          />
+        </View>
+      )}
 
       <TouchableOpacity
         style={styles.sellButton}
@@ -289,6 +365,35 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  locationButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  locationButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 0.5,
+    borderColor: '#ddd',
+  },
+  locationButtonActive: {
+    backgroundColor: '#FF6B6B',
+    borderColor: '#FF6B6B',
+  },
+  locationButtonText: {
+    fontSize: 13,
+    color: '#333',
+  },
+  locationButtonTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  otherInputContainer: {
+    marginTop: 4,
+    marginBottom: 8,
   },
   sellButton: {
     backgroundColor: '#FF6B6B',

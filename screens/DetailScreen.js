@@ -6,7 +6,7 @@ import { db, auth } from '../firebase';
 import { useFavorites } from '../context/FavoritesContext';
 
 export default function DetailScreen({ route, navigation }) {
-  const { id, name, price, description, seller, condition, imageUrl } = route.params;
+  const { id, name, price, description, seller, condition, imageUrl, meetupLocation, meetupDetail } = route.params;
   const [status, setStatus] = useState('available');
   const [hasChat, setHasChat] = useState(false);   // 売約済みでも自分のチャットがあれば確認できる
   const [chatInfo, setChatInfo] = useState(null);
@@ -174,6 +174,21 @@ export default function DetailScreen({ route, navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>商品説明</Text>
           <Text style={styles.description}>{description}</Text>
+        </View>
+
+        {/* 受け渡し場所セクション */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>受け渡し場所</Text>
+          <View style={styles.meetupContainer}>
+            <View style={styles.meetupBadge}>
+              <Text style={styles.meetupBadgeText}>
+                📍 {meetupLocation || '未設定'}
+              </Text>
+            </View>
+            {meetupDetail ? (
+              <Text style={styles.meetupDetail}>{meetupDetail}</Text>
+            ) : null}
+          </View>
         </View>
 
         {/* 自分の商品か・ステータスで表示を切り替え */}
@@ -344,6 +359,30 @@ const styles = StyleSheet.create({
   },
   favoriteButtonTextActive: {
     color: '#fff',
+  },
+  meetupContainer: {
+    marginTop: 8,
+    gap: 8,
+  },
+  meetupBadge: {
+    backgroundColor: '#FFF3F3',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#FFD0D0',
+  },
+  meetupBadgeText: {
+    fontSize: 15,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+  meetupDetail: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 20,
+    paddingHorizontal: 4,
   },
   deleteButton: {
     backgroundColor: '#fff',
