@@ -8,6 +8,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { uploadImage } from '../utils/uploadImage';
 import { showError } from '../utils/errorHandler';
+import { validatePrice, validateProductName, validateDescription } from '../utils/validators';
 
 const CONDITIONS = [
   '未使用に近い',
@@ -57,18 +58,15 @@ export default function SellScreen({ navigation }) {
   };
 
   const handleSell = async () => {
-    if (!name.trim()) {
-      Alert.alert('エラー', '商品名を入力してください');
-      return;
-    }
-    if (!price || isNaN(price) || parseInt(price) <= 0) {
-      Alert.alert('エラー', '正しい価格を入力してください');
-      return;
-    }
-    if (!description.trim()) {
-      Alert.alert('エラー', '商品説明を入力してください');
-      return;
-    }
+    const nameError = validateProductName(name);
+    if (nameError) { Alert.alert('エラー', nameError); return; }
+
+    const priceError = validatePrice(price);
+    if (priceError) { Alert.alert('エラー', priceError); return; }
+
+    const descriptionError = validateDescription(description);
+    if (descriptionError) { Alert.alert('エラー', descriptionError); return; }
+
     if (!imageBase64) {
       Alert.alert('エラー', '商品画像を選択してください');
       return;
