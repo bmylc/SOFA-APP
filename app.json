@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "FleaMarketApp",
-    "slug": "FleaMarketApp",
+    "slug": "fleamarket-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.hokanama.fleamarketapp"
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
@@ -21,7 +22,9 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "package": "com.hokanama.fleamarketapp",
+      "versionCode": 1
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,6 +37,11 @@
           "cameraPermission": "フリマアプリがカメラへのアクセスを求めています"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "963c15f8-e6e7-4074-ac68-eb4e0e2d09aa"
+      }
+    }
   }
 }
