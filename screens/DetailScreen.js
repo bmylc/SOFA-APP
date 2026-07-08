@@ -130,6 +130,50 @@ export default function DetailScreen({ route, navigation }) {
     );
   };
 
+  // 出品者（ユーザー）を通報する
+  const handleReport = () => {
+    Alert.alert(
+      'ユーザーを通報',
+      `${seller} を通報する理由を選択してください`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '不適切な商品',
+          onPress: () => submitReport('不適切な商品'),
+        },
+        {
+          text: '詐欺・偽物',
+          onPress: () => submitReport('詐欺・偽物'),
+        },
+        {
+          text: '禁止商品の出品',
+          onPress: () => submitReport('禁止商品の出品'),
+        },
+        {
+          text: 'その他',
+          onPress: () => submitReport('その他'),
+        },
+      ]
+    );
+  };
+
+  const submitReport = async (reason) => {
+    try {
+      await addDoc(collection(db, 'reports'), {
+        reportedUser: seller,
+        reportedBy: auth.currentUser.email,
+        productId: id,
+        productName: name,
+        reason,
+        status: 'pending', // pending / reviewed / resolved
+        createdAt: serverTimestamp(),
+      });
+      Alert.alert('通報完了', '通報を受け付けました。確認後に対応いたします。');
+    } catch (error) {
+      Alert.alert('エラー', '通報に失敗しました');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -217,6 +261,15 @@ export default function DetailScreen({ route, navigation }) {
                 {liked ? 'お気に入り済み ♥' : 'お気に入りに追加 ♡'}
               </Text>
             </TouchableOpacity>
+            {/* 通報ボタン（他人の商品のみ表示） */}
+            {!isMyProduct && (
+              <TouchableOpacity
+                style={styles.reportButton}
+                onPress={handleReport}
+              >
+                <Text style={styles.reportButtonText}>🚨 このユーザーを通報する</Text>
+              </TouchableOpacity>
+            )}
           </>
         ) : hasChat ? (
           // 売約済みでもチャットがあれば確認できる
@@ -359,6 +412,16 @@ const styles = StyleSheet.create({
   },
   favoriteButtonTextActive: {
     color: '#fff',
+  },
+  reportButton: {
+    margin: 16,
+    marginTop: 0,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  reportButtonText: {
+    color: '#ccc',
+    fontSize: 13,
   },
   meetupContainer: {
     marginTop: 8,

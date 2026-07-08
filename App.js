@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, ActivityIndicator, View } from 'react-native';
+import { Text, ActivityIndicator, View, Alert } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './firebase';
 import { FavoritesProvider } from './context/FavoritesContext';
 import HomeScreen from './screens/HomeScreen';
 import DetailScreen from './screens/DetailScreen';
@@ -134,10 +135,29 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ログイン状態を監視
+  // ログイン状態を監視（BAN されたユーザーはアプリから追い出す）
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // BANチェック（管理者画面から users/{uid}.banned = true が設定される）
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists() && userDoc.data().banned === true) {
+            Alert.alert(
+              'アカウント停止',
+              'このアカウントは利用規約違反のため停止されました。',
+              [{ text: 'OK', onPress: () => auth.signOut() }]
+            );
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error(error);
+        }
+        setUser(user);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
     return unsubscribe;
