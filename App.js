@@ -16,6 +16,7 @@ import RegisterScreen from './screens/RegisterScreen';
 import SellScreen from './screens/SellScreen';
 import ChatScreen from './screens/ChatScreen';
 import ChatListScreen from './screens/ChatListScreen';
+import EditProductScreen from './screens/EditProductScreen';
 
 const Stack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -123,6 +124,16 @@ function MainScreen() {
         options={{
           headerShown: true,
           title: 'オファー一覧',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        }}
+      />
+      <MainStack.Screen
+        name="EditProduct"
+        component={EditProductScreen}
+        options={{
+          headerShown: true,
+          title: '商品を編集',
           headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#333',
         }}

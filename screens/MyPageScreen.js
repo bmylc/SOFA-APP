@@ -199,12 +199,32 @@ export default function MyPageScreen({ navigation }) {
             </View>
 
             {!selectMode && (
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDelete(item.id)}
-              >
-                <Text style={styles.deleteButtonText}>取り消し</Text>
-              </TouchableOpacity>
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => navigation.navigate('EditProduct', {
+                    product: {
+                      id: item.id,
+                      name: item.name,
+                      price: item.price,
+                      description: item.description,
+                      condition: item.condition,
+                      category: item.category,
+                      imageUrl: item.imageUrl,
+                      meetupLocation: item.meetupLocation,
+                      meetupDetail: item.meetupDetail,
+                    }
+                  })}
+                >
+                  <Text style={styles.editButtonText}>編集</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDelete(item.id)}
+                >
+                  <Text style={styles.deleteButtonText}>取り消し</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </TouchableOpacity>
         ))
@@ -377,6 +397,23 @@ const styles = StyleSheet.create({
   itemPrice: {
     fontSize: 14,
     color: '#FF6B6B',
+    fontWeight: 'bold',
+  },
+  cardActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  editButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#4ECDC4',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  editButtonText: {
+    color: '#4ECDC4',
+    fontSize: 13,
     fontWeight: 'bold',
   },
 });
