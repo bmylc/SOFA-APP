@@ -4,6 +4,7 @@ import {
   validateDescription,
   generateChatId,
   filterProducts,
+  getPriceLimit, // ← 追加
 } from '../utils/validators';
 
 // 価格バリデーションのテスト
@@ -105,5 +106,30 @@ describe('filterProducts', () => {
   test('キーワードなし・すべてカテゴリの場合全件返す', () => {
     const result = filterProducts(products, '', 'すべて');
     expect(result).toHaveLength(4);
+  });
+});
+
+describe('validatePrice with category', () => {
+  test('カテゴリの上限を超える場合エラーを返す', () => {
+    expect(validatePrice('25000', 'シューズ')).toBe('シューズの出品上限は¥20,000です');
+  });
+
+  test('カテゴリの上限内なら通る', () => {
+    expect(validatePrice('15000', 'シューズ')).toBeNull();
+  });
+
+  test('カテゴリ未指定はデフォルト上限を使う', () => {
+    expect(validatePrice('60000', null)).toBe('この商品の出品上限は¥50,000です');
+  });
+});
+
+describe('getPriceLimit', () => {
+  test('カテゴリごとの上限を返す', () => {
+    expect(getPriceLimit('アクセサリー')).toBe(10000);
+    expect(getPriceLimit('バッグ')).toBe(50000);
+  });
+
+  test('未知のカテゴリはデフォルト値を返す', () => {
+    expect(getPriceLimit('存在しないカテゴリ')).toBe(50000);
   });
 });

@@ -8,7 +8,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { uploadImage } from '../utils/uploadImage';
 import { showError } from '../utils/errorHandler';
-import { validatePrice, validateProductName, validateDescription } from '../utils/validators';
+import { validatePrice, validateProductName, validateDescription, getPriceLimit } from '../utils/validators';
 import locations from '../data/locations.json';
 
 const CONDITIONS = [
@@ -72,11 +72,15 @@ export default function SellScreen({ navigation }) {
     }
   };
 
+  // カテゴリが変わったら価格上限を更新
+  const priceLimit = getPriceLimit(category);
+
   const handleSell = async () => {
     const nameError = validateProductName(name);
     if (nameError) { Alert.alert('エラー', nameError); return; }
 
-    const priceError = validatePrice(price);
+    // ← カテゴリを渡して上限チェック
+    const priceError = validatePrice(price, category);
     if (priceError) { Alert.alert('エラー', priceError); return; }
 
     const descriptionError = validateDescription(description);
@@ -159,15 +163,7 @@ export default function SellScreen({ navigation }) {
         onChangeText={setName}
       />
 
-      <Text style={styles.sectionTitle}>価格（円）</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="例：3800"
-        value={price}
-        onChangeText={setPrice}
-        keyboardType="numeric"
-      />
-
+      {/* カテゴリで出品上限が決まるので価格より先に選ぶ */}
       <Text style={styles.sectionTitle}>カテゴリ</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
         <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -184,6 +180,26 @@ export default function SellScreen({ navigation }) {
           ))}
         </View>
       </ScrollView>
+
+      <Text style={styles.sectionTitle}>価格（円）</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="例：3800"
+        value={price}
+        onChangeText={setPrice}
+        keyboardType="numeric"
+      />
+      {/* ← 上限金額をリアルタイム表示 */}
+      <View style={styles.priceLimitContainer}>
+        <Text style={styles.priceLimitText}>
+          このカテゴリの出品上限：¥{priceLimit.toLocaleString()}
+        </Text>
+        {price && !isNaN(price) && parseInt(price) > priceLimit && (
+          <Text style={styles.priceLimitError}>
+            ⚠️ 上限を超えています
+          </Text>
+        )}
+      </View>
 
       <Text style={styles.sectionTitle}>商品の状態</Text>
       <View style={styles.conditionContainer}>
@@ -394,6 +410,21 @@ const styles = StyleSheet.create({
   otherInputContainer: {
     marginTop: 4,
     marginBottom: 8,
+  },
+  priceLimitContainer: {
+    marginTop: 6,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceLimitText: {
+    fontSize: 12,
+    color: '#999',
+  },
+  priceLimitError: {
+    fontSize: 12,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
   },
   sellButton: {
     backgroundColor: '#FF6B6B',

@@ -1,10 +1,22 @@
-// 価格のバリデーション
-export function validatePrice(price) {
+import priceLimits from '../data/priceLimits.json';
+
+// カテゴリごとの上限価格を取得
+export function getPriceLimit(category) {
+  return priceLimits.categories[category] || priceLimits.default;
+}
+
+// 価格バリデーション（上限チェック付き）
+export function validatePrice(price, category) {
   if (!price || price.trim() === '') return '価格を入力してください';
   if (isNaN(price)) return '価格は数字で入力してください';
   if (parseInt(price) <= 0) return '価格は1円以上にしてください';
-  if (parseInt(price) > 9999999) return '価格は999万円以下にしてください';
-  return null; // エラーなし
+
+  const limit = getPriceLimit(category);
+  if (parseInt(price) > limit) {
+    return `${category || 'この商品'}の出品上限は¥${limit.toLocaleString()}です`;
+  }
+
+  return null;
 }
 
 // 商品名のバリデーション
