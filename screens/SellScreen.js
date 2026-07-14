@@ -159,6 +159,7 @@ export default function SellScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="例：デニムジャケット"
+        placeholderTextColor="#999"
         value={name}
         onChangeText={setName}
       />
@@ -185,6 +186,7 @@ export default function SellScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="例：3800"
+        placeholderTextColor="#999"
         value={price}
         onChangeText={setPrice}
         keyboardType="numeric"
@@ -220,6 +222,7 @@ export default function SellScreen({ navigation }) {
       <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="商品の詳細を入力してください"
+        placeholderTextColor="#999"
         value={description}
         onChangeText={setDescription}
         multiline
@@ -258,19 +261,7 @@ export default function SellScreen({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="例：大宮駅"
-            value={meetupDetail}
-            onChangeText={setMeetupDetail}
-          />
-        </View>
-      )}
-
-      {/* その他以外のときは任意の詳細入力 */}
-      {meetupLocation && !showOtherInput && (
-        <View style={styles.otherInputContainer}>
-          <Text style={styles.sectionTitle}>詳細（任意）</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="例：1階ロビー、正面入口付近"
+            placeholderTextColor="#999"
             value={meetupDetail}
             onChangeText={setMeetupDetail}
           />
@@ -335,6 +326,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 0.5,
     borderColor: '#ddd',
+    color: '#333', // ← 入力文字色も明示的に指定
   },
   textArea: {
     height: 120,
@@ -351,8 +343,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   conditionButtonActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
+    backgroundColor: '#06534B',
+    borderColor: '#06534B',
   },
   conditionText: {
     fontSize: 14,
@@ -371,8 +363,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   categoryButtonActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
+    backgroundColor: '#06534B',
+    borderColor: '#06534B',
   },
   categoryText: {
     fontSize: 13,
@@ -396,8 +388,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   locationButtonActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
+    backgroundColor: '#06534B',
+    borderColor: '#06534B',
   },
   locationButtonText: {
     fontSize: 13,
@@ -423,11 +415,11 @@ const styles = StyleSheet.create({
   },
   priceLimitError: {
     fontSize: 12,
-    color: '#FF6B6B',
+    color: '#06534B',
     fontWeight: 'bold',
   },
   sellButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',

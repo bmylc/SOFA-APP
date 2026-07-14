@@ -69,7 +69,7 @@ export default function HomeScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color="#06534B" />
       </View>
     );
   }
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#FF6B6B',
+    color: '#06534B',
   },
   imageContainer: {
     width: '100%',

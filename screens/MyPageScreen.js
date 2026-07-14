@@ -142,7 +142,7 @@ export default function MyPageScreen({ navigation }) {
       )}
 
       {loading ? (
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color="#06534B" />
       ) : myProducts.length === 0 ? (
         <Text style={styles.empty}>出品中の商品はありません</Text>
       ) : (
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   selectModeButton: {
     fontSize: 14,
-    color: '#FF6B6B',
+    color: '#06534B',
     fontWeight: 'bold',
   },
   toolbar: {
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   toolbarButton: {
     fontSize: 14,
-    color: '#FF6B6B',
+    color: '#06534B',
     fontWeight: 'bold',
   },
   selectedCount: {
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   bulkDeleteButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   },
   productRowSelected: {
     borderWidth: 2,
-    borderColor: '#FF6B6B',
+    borderColor: '#06534B',
   },
   checkbox: {
     width: 24,
@@ -341,8 +341,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxSelected: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
+    backgroundColor: '#06534B',
+    borderColor: '#06534B',
   },
   checkmark: {
     color: '#fff',
@@ -365,19 +365,19 @@ const styles = StyleSheet.create({
   },
   productPrice: {
     fontSize: 14,
-    color: '#FF6B6B',
+    color: '#06534B',
     fontWeight: 'bold',
   },
   deleteButton: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#FF6B6B',
+    borderColor: '#06534B',
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
   },
   deleteButtonText: {
-    color: '#FF6B6B',
+    color: '#06534B',
     fontSize: 13,
     fontWeight: 'bold',
   },
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 14,
-    color: '#FF6B6B',
+    color: '#06534B',
     fontWeight: 'bold',
   },
   cardActions: {

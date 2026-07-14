@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "FleaMarketApp",
+    "name": "SOFA",
     "slug": "fleamarket-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/SOFA_ICON_V3.jpg",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#06534B"
     },
     "ios": {
       "supportsTablet": false,
@@ -18,16 +18,11 @@
     "android": {
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/SOFA_ADAPTIVEICON_V1.jpg",
+        "backgroundColor": "#06534B"
       },
       "package": "com.hokanama.fleamarketapp",
       "versionCode": 1
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       [

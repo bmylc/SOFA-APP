@@ -53,7 +53,7 @@ export default function ChatListScreen({ route, navigation }) {
       <Text style={styles.subtitle}>{chats.length}件のチャット</Text>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color="#06534B" />
       ) : chats.length === 0 ? (
         <Text style={styles.empty}>まだオファーはありません</Text>
       ) : (
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
     justifyContent: 'center',
     alignItems: 'center',
   },

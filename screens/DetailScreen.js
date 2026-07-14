@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FF6B6B',
+    color: '#06534B',
     marginBottom: 4,
   },
   name: {
@@ -400,13 +400,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FF6B6B',
+    borderColor: '#06534B',
   },
   favoriteButtonActive: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
   },
   favoriteButtonText: {
-    color: '#FF6B6B',
+    color: '#06534B',
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   },
   meetupBadgeText: {
     fontSize: 15,
-    color: '#FF6B6B',
+    color: '#06534B',
     fontWeight: 'bold',
   },
   meetupDetail: {
@@ -454,10 +454,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#FF6B6B',
+    borderColor: '#06534B',
   },
   deleteButtonText: {
-    color: '#FF6B6B',
+    color: '#06534B',
     fontSize: 16,
     fontWeight: 'bold',
   },

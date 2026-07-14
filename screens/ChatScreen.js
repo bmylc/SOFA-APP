@@ -388,6 +388,7 @@ export default function ChatScreen({ route }) {
         <TextInput
           style={styles.input}
           placeholder="メッセージを入力"
+          placeholderTextColor="#999"
           value={text}
           onChangeText={setText}
           multiline
@@ -448,15 +449,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#FF6B6B',
+    borderColor: '#06534B',
   },
   cancelReserveButtonText: {
-    color: '#FF6B6B',
+    color: '#06534B',
     fontSize: 12,
     fontWeight: 'bold',
   },
   completeButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
     paddingVertical: 6,
     paddingHorizontal: 10,
     borderRadius: 8,
@@ -604,7 +605,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   bubbleMe: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
   },
   bubbleOther: {
     backgroundColor: '#fff',
@@ -638,9 +639,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 15,
     maxHeight: 100,
+    color: '#333',
   },
   sendButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,

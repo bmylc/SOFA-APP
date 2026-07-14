@@ -147,31 +147,35 @@ export default function EditProductScreen({ route, navigation }) {
       <TextInput
         style={styles.input}
         placeholder="例：デニムジャケット"
+        placeholderTextColor="#999"
         value={name}
         onChangeText={setName}
       />
 
       {/* カテゴリ */}
       <Text style={styles.sectionTitle}>カテゴリ</Text>
-      <View style={styles.conditionContainer}>
-        {CATEGORIES.map((c) => (
-          <TouchableOpacity
-            key={c}
-            style={[styles.conditionButton, category === c && styles.conditionButtonActive]}
-            onPress={() => setCategory(c)}
-          >
-            <Text style={[styles.conditionText, category === c && styles.conditionTextActive]}>
-              {c}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {CATEGORIES.map((c) => (
+            <TouchableOpacity
+              key={c}
+              style={[styles.categoryButton, category === c && styles.categoryButtonActive]}
+              onPress={() => setCategory(c)}
+            >
+              <Text style={[styles.categoryText, category === c && styles.categoryTextActive]}>
+                {c}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
 
       {/* 価格 */}
       <Text style={styles.sectionTitle}>価格（円）</Text>
       <TextInput
         style={styles.input}
         placeholder="例：3800"
+        placeholderTextColor="#999"
         value={price}
         onChangeText={setPrice}
         keyboardType="numeric"
@@ -225,24 +229,14 @@ export default function EditProductScreen({ route, navigation }) {
         ))}
       </View>
 
+      {/* その他のときだけテキストボックス */}
       {showOtherInput && (
         <View style={styles.otherInputContainer}>
           <Text style={styles.sectionTitle}>場所を入力してください</Text>
           <TextInput
             style={styles.input}
             placeholder="例：大学近くのコンビニ前"
-            value={meetupDetail}
-            onChangeText={setMeetupDetail}
-          />
-        </View>
-      )}
-
-      {meetupLocation && !showOtherInput && (
-        <View style={styles.otherInputContainer}>
-          <Text style={styles.sectionTitle}>詳細（任意）</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="例：1階ロビー、正面入口付近"
+            placeholderTextColor="#999"
             value={meetupDetail}
             onChangeText={setMeetupDetail}
           />
@@ -254,6 +248,7 @@ export default function EditProductScreen({ route, navigation }) {
       <TextInput
         style={[styles.input, styles.textArea]}
         placeholder="商品の詳細を入力してください"
+        placeholderTextColor="#999"
         value={description}
         onChangeText={setDescription}
         multiline
@@ -291,7 +286,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   required: {
-    color: '#FF6B6B',
+    color: '#06534B',
     fontSize: 13,
   },
   imagePicker: {
@@ -343,6 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 0.5,
     borderColor: '#ddd',
+    color: '#333', // ← 入力文字色も明示的に指定
   },
   textArea: {
     height: 120,
@@ -359,8 +355,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   conditionButtonActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
+    backgroundColor: '#06534B',
+    borderColor: '#06534B',
   },
   conditionText: {
     fontSize: 14,
@@ -384,8 +380,8 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   locationButtonActive: {
-    backgroundColor: '#FF6B6B',
-    borderColor: '#FF6B6B',
+    backgroundColor: '#06534B',
+    borderColor: '#06534B',
   },
   locationButtonText: {
     fontSize: 13,
@@ -411,11 +407,11 @@ const styles = StyleSheet.create({
   },
   priceLimitError: {
     fontSize: 12,
-    color: '#FF6B6B',
+    color: '#06534B',
     fontWeight: 'bold',
   },
   updateButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -424,6 +420,31 @@ const styles = StyleSheet.create({
   updateButtonText: {
     color: '#fff',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  categoryButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  categoryButton: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  categoryButtonActive: {
+    backgroundColor: '#06534B',
+    borderColor: '#06534B',
+  },
+  categoryText: {
+    fontSize: 13,
+    color: '#555',
+  },
+  categoryTextActive: {
+    color: '#fff',
     fontWeight: 'bold',
   },
 });

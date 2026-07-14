@@ -118,7 +118,7 @@ export default function SearchScreen({ navigation }) {
 
       {/* 検索結果 */}
       {loading ? (
-        <ActivityIndicator size="large" color="#FF6B6B" style={{ marginTop: 32 }} />
+        <ActivityIndicator size="large" color="#06534B" style={{ marginTop: 32 }} />
       ) : (
         <FlatList
           data={filtered}
@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 10,
     fontSize: 15,
+    color: '#333',
   },
   categoryList: {
     backgroundColor: '#fff',
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   categoryButtonActive: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
   },
   categoryText: {
     fontSize: 13,
@@ -215,7 +216,7 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#FF6B6B',
+    color: '#06534B',
   },
   empty: {
     textAlign: 'center',

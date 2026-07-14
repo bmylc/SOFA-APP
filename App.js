@@ -46,7 +46,7 @@ function MainTab() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#FF6B6B',
+        tabBarActiveTintColor: '#06534B',
         tabBarInactiveTintColor: '#999',
         headerShown: false,
       }}
@@ -177,7 +177,7 @@ export default function App() {
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color="#06534B" />
       </View>
     );
   }

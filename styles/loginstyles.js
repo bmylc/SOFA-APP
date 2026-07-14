@@ -22,9 +22,10 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: '#ddd',
     marginBottom: 12,
+    color: '#333',
   },
   button: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#06534B',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -36,7 +37,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   link: {
-    color: '#FF6B6B',
+    color: '#06534B',
     textAlign: 'center',
     marginTop: 16,
     fontSize: 14,
