@@ -102,7 +102,18 @@ export default function DetailScreen({ route, navigation }) {
     if (liked) {
       removeFavorite(id);
     } else {
-      addFavorite({ id, name, price });
+      // ← 詳細情報も一緒に保存する（マイページのお気に入りから詳細画面を開けるように）
+      addFavorite({
+        id,
+        name,
+        price,
+        description,
+        seller,
+        condition,
+        imageUrl,
+        meetupLocation,
+        meetupDetail,
+      });
     }
   };
 

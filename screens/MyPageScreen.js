@@ -8,7 +8,7 @@ import { db, auth } from '../firebase';
 import { useFavorites } from '../context/FavoritesContext';
 
 export default function MyPageScreen({ navigation }) {
-  const { favorites } = useFavorites();
+  const { favorites, removeFavorite } = useFavorites();
   const [myProducts, setMyProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]); // 選択中のID
@@ -238,10 +238,53 @@ export default function MyPageScreen({ navigation }) {
         <Text style={styles.empty}>お気に入りはまだありません</Text>
       ) : (
         favorites.map((item) => (
-          <View key={item.id} style={styles.item}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPrice}>¥{item.price.toLocaleString()}</Text>
-          </View>
+          <TouchableOpacity
+            key={item.id}
+            style={styles.productRow}
+            onPress={() => navigation.navigate('Detail', {
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              description: item.description || '',
+              seller: item.seller || '',
+              condition: item.condition || '',
+              imageUrl: item.imageUrl || '',
+              meetupLocation: item.meetupLocation || '未設定',
+              meetupDetail: item.meetupDetail || '',
+            })}
+          >
+            <Image
+              source={{ uri: item.imageUrl || 'https://picsum.photos/200' }}
+              style={styles.productImage}
+            />
+            <View style={styles.productInfo}>
+              <Text style={styles.productName}>{item.name}</Text>
+              <Text style={styles.productPrice}>
+                ¥{Number(item.price).toLocaleString()}
+              </Text>
+            </View>
+
+            {/* ← お気に入り取り消しボタン */}
+            <TouchableOpacity
+              style={styles.unfavoriteButton}
+              onPress={() => {
+                Alert.alert(
+                  'お気に入り取り消し',
+                  `「${item.name}」をお気に入りから削除しますか？`,
+                  [
+                    { text: 'キャンセル', style: 'cancel' },
+                    {
+                      text: '削除',
+                      style: 'destructive',
+                      onPress: () => removeFavorite(item.id),
+                    },
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.unfavoriteButtonText}>♥ 取り消し</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
         ))
       )}
     </ScrollView>
@@ -414,6 +457,19 @@ const styles = StyleSheet.create({
   editButtonText: {
     color: '#4ECDC4',
     fontSize: 13,
+    fontWeight: 'bold',
+  },
+  unfavoriteButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  unfavoriteButtonText: {
+    color: '#FF6B6B',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });
