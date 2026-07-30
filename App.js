@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, ActivityIndicator, View, Alert } from 'react-native';
+import { Text, ActivityIndicator, View } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { FavoritesProvider } from './context/FavoritesContext';
+import BannedScreen from './screens/BannedScreen';
 import HomeScreen from './screens/HomeScreen';
 import DetailScreen from './screens/DetailScreen';
 import SearchScreen from './screens/SearchScreen';
@@ -145,33 +146,31 @@ function MainScreen() {
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isBanned, setIsBanned] = useState(false);
 
-  // ログイン状態を監視（BAN されたユーザーはアプリから追い出す）
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // BANチェック（管理者画面から users/{uid}.banned = true が設定される）
-        try {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists() && userDoc.data().banned === true) {
-            Alert.alert(
-              'アカウント停止',
-              'このアカウントは利用規約違反のため停止されました。',
-              [{ text: 'OK', onPress: () => auth.signOut() }]
-            );
-            setLoading(false);
-            return;
-          }
-        } catch (error) {
-          console.error(error);
-        }
         setUser(user);
+        setLoading(false);
+
+        // BANステータスをリアルタイムで監視
+        const userRef = doc(db, 'users', user.uid);
+        const unsubscribeUser = onSnapshot(userRef, (snap) => {
+          if (snap.exists()) {
+            setIsBanned(snap.data().banned === true);
+          }
+        });
+
+        return unsubscribeUser;
       } else {
         setUser(null);
+        setIsBanned(false);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return unsubscribe;
+
+    return unsubscribeAuth;
   }, []);
 
   if (loading) {
@@ -185,7 +184,13 @@ export default function App() {
   return (
     <FavoritesProvider>
       <NavigationContainer>
-        {user ? <MainScreen /> : <AuthStack />}
+        {!user ? (
+          <AuthStack />
+        ) : isBanned ? (
+          <BannedScreen />
+        ) : (
+          <MainScreen />
+        )}
       </NavigationContainer>
     </FavoritesProvider>
   );
