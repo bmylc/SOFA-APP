@@ -1,21 +1,29 @@
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context'; // ← 追加
 import { deleteDoc, doc, onSnapshot, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context'; // ← 追加
 import { db, auth } from '../firebase';
 import { useFavorites } from '../context/FavoritesContext';
+import { useUsers } from '../context/UserContext';
+import { isEnrolledStudent } from '../utils/checkEnrollment';
 
 export default function DetailScreen({ route, navigation }) {
   const { id, name, price, description, seller, condition, imageUrl, meetupLocation, meetupDetail } = route.params;
   const [status, setStatus] = useState('available');
-  const [hasChat, setHasChat] = useState(false);   // 売約済みでも自分のチャットがあれば確認できる
-  const [chatInfo, setChatInfo] = useState(null);
   const { addFavorite, removeFavorite, isFavorite } = useFavorites();
+  const [hasChat, setHasChat] = useState(false);
+  const [chatInfo, setChatInfo] = useState(null);
+  const { getUserName } = useUsers();
+  const [sellerName, setSellerName] = useState('');
+  const [isSellerEnrolled, setIsSellerEnrolled] = useState(false);
 
   const liked = isFavorite(id);
-  const isMyProduct = auth.currentUser.email === seller; // ← 自分の商品か判定
+  const isMyProduct = auth.currentUser.email === seller;
 
-  // ステータスをリアルタイムで監視（Hooks はコンポーネントの直下で呼ぶ）
+  useEffect(() => {
+    getUserName(seller).then(name => setSellerName(name));
+  }, [seller]);
+
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'products', id), (snap) => {
       if (snap.exists()) {
@@ -25,7 +33,6 @@ export default function DetailScreen({ route, navigation }) {
     return unsubscribe;
   }, [id]);
 
-  // 自分（買い手）が既にこの商品のチャットを持っているか確認
   useEffect(() => {
     if (isMyProduct) return;
     const checkChat = async () => {
@@ -42,6 +49,18 @@ export default function DetailScreen({ route, navigation }) {
     checkChat();
   }, [id]);
 
+  useEffect(() => {
+    const checkSeller = async () => {
+      const q = query(collection(db, 'users'), where('email', '==', seller));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const userData = snapshot.docs[0].data();
+        setIsSellerEnrolled(isEnrolledStudent(userData)); // ← ここで判定
+      }
+    };
+    checkSeller();
+  }, [seller]);
+
   const handleContact = async () => {
     const currentUser = auth.currentUser;
 
@@ -57,7 +76,7 @@ export default function DetailScreen({ route, navigation }) {
       }
 
       if (snapshot.docs.length === 1) {
-        // チャットが1件のみはそのまま移動
+        // チャットが1件のみの場合はそのまま移動
         const chatData = snapshot.docs[0].data();
         navigation.navigate('Chat', {
           chatId: chatData.chatId,
@@ -66,14 +85,13 @@ export default function DetailScreen({ route, navigation }) {
           productId: id,
         });
       } else {
-        // 複数の場合はオファー一覧へ
         navigation.navigate('ChatList', {
           productId: id,
           productName: name,
         });
       }
     } else {
-      // 買い手の場合：既存チャットを確認して、なければ新規作成
+      // 買い手の場合：既存チャットを確認して新規作成
       const chatId = [currentUser.uid, seller].sort().join('_') + '_' + id;
       const chatRef = collection(db, 'chats');
       const q = query(chatRef, where('chatId', '==', chatId));
@@ -102,7 +120,6 @@ export default function DetailScreen({ route, navigation }) {
     if (liked) {
       removeFavorite(id);
     } else {
-      // ← 詳細情報も一緒に保存する（マイページのお気に入りから詳細画面を開けるように）
       addFavorite({
         id,
         name,
@@ -141,7 +158,7 @@ export default function DetailScreen({ route, navigation }) {
     );
   };
 
-  // 出品者（ユーザー）を通報する
+// handleReport 関数を追加
   const handleReport = () => {
     Alert.alert(
       'ユーザーを通報',
@@ -188,19 +205,16 @@ export default function DetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* 商品画像 */}
         <Image
           source={{ uri: imageUrl || 'https://picsum.photos/400' }}
           style={styles.image}
         />
 
-        {/* 価格と商品名 */}
         <View style={styles.section}>
-          <Text style={styles.price}>¥{price.toLocaleString()}</Text>
+          <Text style={styles.price}>￥{price.toLocaleString()}</Text>
           <Text style={styles.name}>{name}</Text>
         </View>
 
-        {/* 売約済みバナー */}
         {status === 'reserved' && (
           <View style={styles.reservedBanner}>
             <Text style={styles.reservedBannerText}>🤝 売約済み・対面取引待ち</Text>
@@ -212,20 +226,21 @@ export default function DetailScreen({ route, navigation }) {
           </View>
         )}
 
-        {/* 商品情報 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>商品情報</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>商品の状態</Text>
-            <Text style={styles.infoValue}>{condition}</Text>
-          </View>
-          <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>出品者</Text>
-            <Text style={styles.infoValue}>{seller}</Text>
+            <View style={styles.sellerRow}>
+              <Text style={styles.infoValue}>{sellerName || ''}</Text>
+              {isSellerEnrolled && (
+                <View style={styles.enrolledBadge}>
+                  <Text style={styles.enrolledBadgeText}>在校生</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
-        {/* 商品説明 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>商品説明</Text>
           <Text style={styles.description}>{description}</Text>
@@ -246,7 +261,6 @@ export default function DetailScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* 自分の商品か・ステータスで表示を切り替え */}
         {isMyProduct ? (
           <>
             <TouchableOpacity
@@ -272,7 +286,6 @@ export default function DetailScreen({ route, navigation }) {
                 {liked ? 'お気に入り済み ♥' : 'お気に入りに追加 ♡'}
               </Text>
             </TouchableOpacity>
-            {/* 通報ボタン（他人の商品のみ表示） */}
             {!isMyProduct && (
               <TouchableOpacity
                 style={styles.reportButton}
@@ -282,19 +295,19 @@ export default function DetailScreen({ route, navigation }) {
               </TouchableOpacity>
             )}
           </>
-        ) : hasChat ? (
-          // 売約済みでもチャットがあれば確認できる
-          <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-            <Text style={styles.contactButtonText}>チャットを確認する</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.reservedMessage}>
-            <Text style={styles.reservedMessageText}>
-              {status === 'reserved'
-                ? 'この商品は現在売約済みです'
-                : 'この商品の取引は完了しています'}
-            </Text>
-          </View>
+          ) : hasChat ? (
+            // ← 売約済みでもチャットがあれば確認できる
+            <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+              <Text style={styles.contactButtonText}>チャットを確認する</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.reservedMessage}>
+              <Text style={styles.reservedMessageText}>
+                {status === 'reserved'
+                  ? 'この商品は現在売約済みです'
+                  : 'この商品の取引は完了しています'}
+              </Text>
+            </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -309,6 +322,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#f5f5f5',
     paddingBottom: 32,
+    paddingTop: 0,
   },
   image: {
     width: '100%',
@@ -357,6 +371,68 @@ const styles = StyleSheet.create({
     color: '#333',
     lineHeight: 22,
   },
+  favoriteButton: {
+    backgroundColor: '#fff',
+    margin: 16,
+    marginBottom: 0,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#06534B',
+  },
+  favoriteButtonActive: {
+    backgroundColor: '#06534B',
+  },
+  favoriteButtonText: {
+    color: '#06534B',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  favoriteButtonTextActive: {
+    color: '#fff',
+  },
+  buyButton: {
+    backgroundColor: '#06534B',
+    margin: 16,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buyButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  deleteButton: {
+    backgroundColor: '#fff',
+    margin: 16,
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#06534B',
+  },
+  deleteButtonText: {
+    color: '#06534B',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  contactButton: {
+   backgroundColor: '#fff',
+   margin: 16,
+   marginBottom: 0,
+   paddingVertical: 16,
+   borderRadius: 8,
+   alignItems: 'center',
+   borderWidth: 1,
+   borderColor: '#4ECDC4',
+  },
+  contactButtonText: {
+   color: '#4ECDC4',
+   fontSize: 16,
+   fontWeight: 'bold',
+  },
   reservedBanner: {
     backgroundColor: '#FFE66D',
     padding: 12,
@@ -388,52 +464,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
   },
-  contactButton: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#4ECDC4',
-  },
-  contactButtonText: {
-    color: '#4ECDC4',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  favoriteButton: {
-    backgroundColor: '#fff',
-    margin: 16,
-    marginBottom: 0,
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#06534B',
-  },
-  favoriteButtonActive: {
-    backgroundColor: '#06534B',
-  },
-  favoriteButtonText: {
-    color: '#06534B',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  favoriteButtonTextActive: {
-    color: '#fff',
-  },
-  reportButton: {
-    margin: 16,
-    marginTop: 0,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  reportButtonText: {
-    color: '#ccc',
-    fontSize: 13,
-  },
   meetupContainer: {
     marginTop: 8,
     gap: 8,
@@ -458,18 +488,36 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingHorizontal: 4,
   },
-  deleteButton: {
+  reportButton: {
     backgroundColor: '#fff',
     margin: 16,
+    marginBottom: 0,
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#06534B',
   },
-  deleteButtonText: {
+  reportButtonText: {
+    color: '#f00',
+    fontSize: 13,
+  },
+  sellerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  enrolledBadge: {
+    backgroundColor: '#E8F5E9',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#06534B',
+  },
+  enrolledBadgeText: {
+    fontSize: 11,
     color: '#06534B',
-    fontSize: 16,
     fontWeight: 'bold',
   },
 });

@@ -5,13 +5,15 @@ import {
 } from 'react-native';
 import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { useUsers } from '../context/UserContext';
 
-// 出品者が1つの商品に届いた複数のオファー（チャット）を一覧で確認する画面
 export default function ChatListScreen({ route, navigation }) {
   const { productId, productName } = route.params;
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userNames, setUserNames] = useState({});
+  const [buyerNames, setBuyerNames] = useState({}); // ← 追加
+  const { getUserName } = useUsers();
 
   useEffect(() => {
     const q = query(
@@ -29,20 +31,17 @@ export default function ChatListScreen({ route, navigation }) {
     return unsubscribe;
   }, [productId]);
 
-  // 買い手の氏名を users コレクションから取得
+  // チャットが更新されたら買い手の名前を取得
   useEffect(() => {
     const fetchNames = async () => {
       const names = {};
       for (const chat of chats) {
         const buyer = chat.members.find(m => m !== auth.currentUser.email);
         if (buyer && !names[buyer]) {
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('email', '==', buyer));
-          const snapshot = await getDocs(q);
-          names[buyer] = !snapshot.empty ? snapshot.docs[0].data().name : buyer;
+          names[buyer] = await getUserName(buyer);
         }
       }
-      setUserNames(names);
+      setBuyerNames(names);
     };
     if (chats.length > 0) fetchNames();
   }, [chats]);
@@ -62,6 +61,7 @@ export default function ChatListScreen({ route, navigation }) {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => {
             const buyer = item.members.find(m => m !== auth.currentUser.email);
+            const displayName = buyerNames[buyer] || ''; // ← 取得前は空文字
             return (
               <TouchableOpacity
                 style={styles.chatRow}
@@ -74,14 +74,15 @@ export default function ChatListScreen({ route, navigation }) {
               >
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
-                    {buyer ? buyer[0].toUpperCase() : '?'}
+                    {displayName ? displayName[0].toUpperCase() : '?'}
                   </Text>
                 </View>
                 <View style={styles.chatInfo}>
-                  <Text style={styles.buyerName}>{userNames[buyer] || buyer}</Text>
-                  <Text style={styles.chatDate}>
-                    タップしてチャットを開く
+                  {/* 名前が取得できてから表示 */}
+                  <Text style={styles.buyerName}>
+                    {displayName || '読み込み中...'}
                   </Text>
+                  <Text style={styles.chatDate}>タップしてチャットを開く</Text>
                 </View>
                 <Text style={styles.arrow}>›</Text>
               </TouchableOpacity>

@@ -7,6 +7,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { FavoritesProvider } from './context/FavoritesContext';
+import { UserProvider } from './context/UserContext';
 import BannedScreen from './screens/BannedScreen';
 import HomeScreen from './screens/HomeScreen';
 import DetailScreen from './screens/DetailScreen';
@@ -183,15 +184,17 @@ export default function App() {
 
   return (
     <FavoritesProvider>
-      <NavigationContainer>
-        {!user ? (
-          <AuthStack />
-        ) : isBanned ? (
-          <BannedScreen />
-        ) : (
-          <MainScreen />
-        )}
-      </NavigationContainer>
+      <UserProvider>
+        <NavigationContainer>
+          {!user ? (
+            <AuthStack />
+          ) : isBanned ? (
+            <BannedScreen />
+          ) : (
+            <MainScreen />
+          )}
+        </NavigationContainer>
+      </UserProvider>
     </FavoritesProvider>
   );
 }

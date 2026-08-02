@@ -1,9 +1,10 @@
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback} from 'react';
 import { View, Text, Image, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query,getDocs,where } from 'firebase/firestore';
 import { db } from '../firebase';
+import { isEnrolledStudent } from '../utils/checkEnrollment';
 
-// memo で囲んで、props が変わらないカードは再描画しない
+// HomeScreen.js と SearchScreen.js 共通
 const ProductCard = memo(function ProductCard({ item, onPress }) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -12,6 +13,7 @@ const ProductCard = memo(function ProductCard({ item, onPress }) {
           source={{ uri: item.imageUrl || 'https://picsum.photos/200' }}
           style={styles.image}
         />
+        {/* 売約済みバッジ */}
         {item.status === 'reserved' && (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>売約済み</Text>
@@ -22,8 +24,14 @@ const ProductCard = memo(function ProductCard({ item, onPress }) {
             <Text style={styles.badgeText}>取引完了</Text>
           </View>
         )}
+        {/* ← 在校生バッジ（右上） */}
+        {item.isEnrolled && (
+          <View style={styles.enrolledBadge}>
+            <Text style={styles.enrolledBadgeText}>在校生</Text>
+          </View>
+        )}
       </View>
-      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
       <Text style={styles.price}>¥{item.price.toLocaleString()}</Text>
     </TouchableOpacity>
   );
@@ -39,19 +47,33 @@ export default function HomeScreen({ navigation }) {
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(data);
-      setLoading(false);
-    });
+  const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const data = await Promise.all(snapshot.docs.map(async (doc) => {
+      const product = { id: doc.id, ...doc.data() };
+
+      // 出品者の在校生判定
+      const userQuery = query(
+        collection(db, 'users'),
+        where('email', '==', product.seller)
+      );
+      const userSnapshot = await getDocs(userQuery);
+      if (!userSnapshot.empty) {
+        const userData = userSnapshot.docs[0].data();
+        product.isEnrolled = isEnrolledStudent(userData); // ← ここで判定
+      } else {
+        product.isEnrolled = false;
+      }
+
+      return product;
+    }));
+
+    setProducts(data);
+    setLoading(false);
+  });
 
     return unsubscribe;
   }, []);
-
-  // Hooks は if (loading) return より前に書く
+  
   const handlePressProduct = useCallback((item) => {
     navigation.navigate('Detail', {
       id: item.id,
@@ -73,7 +95,7 @@ export default function HomeScreen({ navigation }) {
       </View>
     );
   }
-
+  
   return (
     <FlatList
       data={products}
@@ -127,7 +149,7 @@ const styles = StyleSheet.create({
     gap: 8,
     flex: 1,
     elevation: 4,
-    maxWidth: '49%',
+    maxWidth:'49%',
   },
   image: {
     width: '100%',
@@ -165,4 +187,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  enrolledBadge: {
+  position: 'absolute',
+  top: 8,
+  right: 8, // ← 右上
+  backgroundColor: '#06534B',
+  paddingVertical: 3,
+  paddingHorizontal: 7,
+  borderRadius: 8,
+},
+enrolledBadgeText: {
+  fontSize: 10,
+  color: '#fff',
+  fontWeight: 'bold',
+},
 });
