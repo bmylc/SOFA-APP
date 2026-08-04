@@ -17,6 +17,9 @@
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
+      "permissions": [
+        "android.permission.NFC"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/SOFA_ADAPTIVEICON_V1.jpg",
         "backgroundColor": "#06534B"
@@ -25,13 +28,15 @@
       "versionCode": 1
     },
     "plugins": [
+      "react-native-nfc-manager",
       [
         "expo-image-picker",
         {
           "photosPermission": "フリマアプリが写真へのアクセスを求めています",
           "cameraPermission": "フリマアプリがカメラへのアクセスを求めています"
         }
-      ]
+      ],
+      "react-native-nfc-manager"
     ],
     "extra": {
       "eas": {

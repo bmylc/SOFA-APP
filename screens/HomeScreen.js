@@ -69,7 +69,13 @@ export default function HomeScreen({ navigation }) {
 
     setProducts(data);
     setLoading(false);
-  });
+},
+(error) => {
+      console.error('Firestoreエラー:', error.message); // ← 追加
+      console.error('エラーコード:', error.code); // ← 追加
+      setLoading(false);
+    }
+);
 
     return unsubscribe;
   }, []);

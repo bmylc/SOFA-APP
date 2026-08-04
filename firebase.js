@@ -13,7 +13,6 @@ const firebaseConfig = {
   appId: "1:45490144216:web:41294a20926b23b9b728ad"
 };
 
-// 既に初期化済みの場合は既存のアプリを使う
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 export const db = getFirestore(app);

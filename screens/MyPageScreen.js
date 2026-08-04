@@ -107,6 +107,14 @@ export default function MyPageScreen({ navigation }) {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>マイページ</Text>
 
+      {/* プロフィール編集ボタン */}
+      <TouchableOpacity
+        style={styles.profileEditButton}
+        onPress={() => navigation.navigate('ProfileEdit')}
+      >
+        <Text style={styles.profileEditButtonText}>プロフィールを編集する</Text>
+      </TouchableOpacity>
+
       {/* 出品中の商品 */}
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>
@@ -442,6 +450,17 @@ const styles = StyleSheet.create({
     color: '#06534B',
     fontWeight: 'bold',
   },
+  testButton: {
+   backgroundColor: '#4ECDC4',
+   padding: 12,
+   borderRadius: 8,
+   alignItems: 'center',
+   marginTop: 16,
+  },
+  testButtonText: {
+   color: '#fff',
+   fontWeight: 'bold',
+  },
   cardActions: {
     flexDirection: 'row',
     gap: 8,
@@ -470,6 +489,20 @@ const styles = StyleSheet.create({
   unfavoriteButtonText: {
     color: '#FF6B6B',
     fontSize: 12,
+    fontWeight: 'bold',
+  },
+  profileEditButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#06534B',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  profileEditButtonText: {
+    color: '#06534B',
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

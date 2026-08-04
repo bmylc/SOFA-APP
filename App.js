@@ -19,6 +19,9 @@ import SellScreen from './screens/SellScreen';
 import ChatScreen from './screens/ChatScreen';
 import ChatListScreen from './screens/ChatListScreen';
 import EditProductScreen from './screens/EditProductScreen';
+import ProfileEditScreen from './screens/ProfileEditScreen';
+import NfcLoginScreen from './screens/NfcLoginScreen';
+import NfcProfileScreen from './screens/NfcProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -39,6 +42,26 @@ function AuthStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen
+        name="NfcLogin"
+        component={NfcLoginScreen}
+        options={{
+          headerShown: true,
+          title: '学生証ログイン',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        }}
+      />
+      <Stack.Screen
+        name="NfcProfile"
+        component={NfcProfileScreen}
+        options={{
+          headerShown: true,
+          title: 'プロフィール設定',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -136,6 +159,16 @@ function MainScreen() {
         options={{
           headerShown: true,
           title: '商品を編集',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        }}
+      />
+      <MainStack.Screen
+        name="ProfileEdit"
+        component={ProfileEditScreen}
+        options={{
+          headerShown: true,
+          title: 'プロフィール編集',
           headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#333',
         }}
