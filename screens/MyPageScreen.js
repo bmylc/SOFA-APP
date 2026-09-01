@@ -3,8 +3,9 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Image, Alert, ActivityIndicator
 } from 'react-native';
-import { collection, query, where, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import { useFavorites } from '../context/FavoritesContext';
 
 export default function MyPageScreen({ navigation }) {
@@ -103,6 +104,51 @@ export default function MyPageScreen({ navigation }) {
     );
   };
 
+  // NFC紐づけ処理
+  const handleLinkNfc = async () => {
+    Alert.alert(
+      'NFC紐づけ',
+      '学生証をスマホにかざしてください',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '開始',
+          onPress: async () => {
+            try {
+              await NfcManager.requestTechnology([
+                NfcTech.NfcF,
+                NfcTech.IsoDep,
+                NfcTech.Ndef,
+              ]);
+              const tag = await NfcManager.getTag();
+
+              if (!tag || !tag.id) {
+                Alert.alert('エラー', '学生証の読み取りに失敗しました');
+                return;
+              }
+
+              const uid = tag.id;
+
+              // FirestoreにUIDを保存
+              await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+                cardUid: uid,
+                isEnrolled: true,
+                enrolledAt: new Date().toISOString(),
+                affiliation: '学生',
+              });
+
+              Alert.alert('完了', '学生証を紐づけました！\n次回から学生証でログインできます。');
+            } catch (error) {
+              Alert.alert('エラー', 'NFC読み取りに失敗しました: ' + error.message);
+            } finally {
+              NfcManager.cancelTechnologyRequest().catch(() => {});
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>マイページ</Text>
@@ -113,6 +159,14 @@ export default function MyPageScreen({ navigation }) {
         onPress={() => navigation.navigate('ProfileEdit')}
       >
         <Text style={styles.profileEditButtonText}>プロフィールを編集する</Text>
+      </TouchableOpacity>
+
+      {/* 学生証の紐づけ */}
+      <TouchableOpacity
+        style={styles.nfcLinkButton}
+        onPress={handleLinkNfc}
+      >
+        <Text style={styles.nfcLinkButtonText}>🎓 学生証を紐づける</Text>
       </TouchableOpacity>
 
       {/* 出品中の商品 */}
@@ -501,6 +555,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   profileEditButtonText: {
+    color: '#06534B',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  nfcLinkButton: {
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#06534B',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  nfcLinkButtonText: {
     color: '#06534B',
     fontSize: 14,
     fontWeight: 'bold',

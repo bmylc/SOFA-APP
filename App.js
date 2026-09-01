@@ -21,7 +21,6 @@ import ChatListScreen from './screens/ChatListScreen';
 import EditProductScreen from './screens/EditProductScreen';
 import ProfileEditScreen from './screens/ProfileEditScreen';
 import NfcLoginScreen from './screens/NfcLoginScreen';
-import NfcProfileScreen from './screens/NfcProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
@@ -48,16 +47,6 @@ function AuthStack() {
         options={{
           headerShown: true,
           title: '学生証ログイン',
-          headerStyle: { backgroundColor: '#fff' },
-          headerTintColor: '#333',
-        }}
-      />
-      <Stack.Screen
-        name="NfcProfile"
-        component={NfcProfileScreen}
-        options={{
-          headerShown: true,
-          title: 'プロフィール設定',
           headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#333',
         }}

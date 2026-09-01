@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { signInWithCustomToken } from 'firebase/auth';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
-import { auth, db } from '../firebase';
+import { auth } from '../firebase';
 import {
   verifyStudentCard,
-  checkUserExists,
 } from '../utils/checkEnrollment';
 
 export default function NfcLoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('idle'); // idle / reading / verifying / success / error
+  const [status, setStatus] = useState('idle');
   const [nfcSupported, setNfcSupported] = useState(true);
 
   useEffect(() => {
@@ -22,20 +20,14 @@ export default function NfcLoginScreen({ navigation }) {
           return;
         }
         const supported = await NfcManager.isSupported();
-        console.log('NFC対応:', supported);
         setNfcSupported(!!supported);
-        if (supported) {
-          await NfcManager.start();
-          console.log('NFC初期化完了');
-        }
+        if (supported) await NfcManager.start();
       } catch (error) {
         console.error('NFC初期化エラー:', error);
         setNfcSupported(false);
       }
     };
     checkNfc();
-
-    // クリーンアップ
     return () => {
       if (NfcManager) NfcManager.cancelTechnologyRequest().catch(() => {});
     };
@@ -46,67 +38,41 @@ export default function NfcLoginScreen({ navigation }) {
     setStatus('reading');
 
     try {
-      console.log('ステップ1: NFC開始');
-
-      // FeliCa を基本に、IsoDep / Ndef も候補にする
+      // Step1: NFCでUIDを読み取る
       await NfcManager.requestTechnology([
-        NfcTech.NfcF,      // FeliCa
-        NfcTech.IsoDep,    // ISO14443
-        NfcTech.Ndef,      // NDEF
+        NfcTech.NfcF,
+        NfcTech.IsoDep,
+        NfcTech.Ndef,
       ]);
-      console.log('ステップ2: テクノロジー取得成功');
-
       const tag = await NfcManager.getTag();
-      console.log('ステップ3: タグ:', JSON.stringify(tag));
       if (!tag || !tag.id) throw new Error('学生証の読み取りに失敗しました');
 
       const uid = tag.id;
-      console.log('ステップ4: UID:', uid);
+      console.log('読み取ったUID:', uid);
       setStatus('verifying');
 
-      // Step2: GASで在校生確認＆カスタムトークン取得
+      // Step2: GASでUID照合＆カスタムトークン取得
       const result = await verifyStudentCard(uid);
+      console.log('GAS結果:', JSON.stringify(result));
 
       if (!result.success) {
-        Alert.alert('認証失敗', result.message || '在校生として確認できませんでした');
+        Alert.alert(
+          '未登録',
+          'この学生証はまだ紐づけられていません。\nマイページから学生証を紐づけてください。'
+        );
         setStatus('error');
         return;
       }
 
       // Step3: カスタムトークンでFirebaseにログイン
-      const userCredential = await signInWithCustomToken(auth, result.token);
-      const firebaseUid = userCredential.user.uid;
-
-      console.log('FirebaseUID:', firebaseUid);
-      const exists = await checkUserExists(firebaseUid);
-      console.log('ユーザー存在確認:', exists);
-
+      await signInWithCustomToken(auth, result.token);
       setStatus('success');
 
-      if (!exists) {
-        // 初回ログイン：基本情報を自動保存してプロフィール設定へ
-        await setDoc(doc(db, 'users', firebaseUid), {
-          email: auth.currentUser?.email || '',
-          affiliation: '学生', // ← 学生固定
-          cardUid: uid,
-          isEnrolled: true, // ← 在校生フラグ
-          enrolledAt: new Date().toISOString(), // ← 在校生認証日時
-          createdAt: new Date().toISOString(),
-        });
-        navigation.navigate('NfcProfile', { firebaseUid, cardUid: uid });
-      } else {
-        // 2回目以降：在校生フラグを更新
-        await updateDoc(doc(db, 'users', firebaseUid), {
-          isEnrolled: true,
-          enrolledAt: new Date().toISOString(),
-        });
-      }
     } catch (error) {
       console.error('NFCエラー:', error.message);
       Alert.alert('エラー', error.message || 'NFC読み取りに失敗しました');
       setStatus('error');
     } finally {
-      // 必ずキャンセル処理を実行
       NfcManager.cancelTechnologyRequest().catch(() => {});
       setLoading(false);
     }
@@ -125,6 +91,9 @@ export default function NfcLoginScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>学生証でログイン</Text>
+      <Text style={styles.subtitle}>
+        事前にマイページから{'\n'}学生証の紐づけが必要です
+      </Text>
 
       {!nfcSupported ? (
         <View style={styles.errorBox}>
@@ -165,7 +134,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
     marginBottom: 48,
+    lineHeight: 22,
   },
   nfcButton: {
     width: 180,
