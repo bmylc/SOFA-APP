@@ -174,12 +174,14 @@ export default function App() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        console.log('ログインユーザーUID:', user.uid);
         setUser(user);
         setLoading(false);
 
         // BANステータスをリアルタイムで監視
         const userRef = doc(db, 'users', user.uid);
         const unsubscribeUser = onSnapshot(userRef, (snap) => {
+          console.log('Firestoreドキュメント存在:', snap.exists());
           if (snap.exists()) {
             setIsBanned(snap.data().banned === true);
           }

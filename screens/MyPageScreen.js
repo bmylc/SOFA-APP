@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Image, Alert, ActivityIndicator
 } from 'react-native';
-import { collection, query, where, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, deleteDoc, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import { useFavorites } from '../context/FavoritesContext';
+
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwzyE_55R5mvp2yvuc4w4FSA1NDzISH1UzK-xCVIlXNskBEQvwZyl45mEYJtOaIeFme/exec';
 
 export default function MyPageScreen({ navigation }) {
   const { favorites, removeFavorite } = useFavorites();
@@ -14,6 +16,8 @@ export default function MyPageScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState([]); // 選択中のID
   const [selectMode, setSelectMode] = useState(false); // 選択モード
+  const [cardUid, setCardUid] = useState(null);
+  const [loadingNfc, setLoadingNfc] = useState(true);
 
   useEffect(() => {
     const q = query(
@@ -29,6 +33,22 @@ export default function MyPageScreen({ navigation }) {
       setLoading(false);
     });
     return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    const fetchCardUid = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+          setCardUid(userDoc.data().cardUid || null);
+        }
+      } catch (error) {
+        console.error('cardUid取得エラー:', error);
+      } finally {
+        setLoadingNfc(false);
+      }
+    };
+    fetchCardUid();
   }, []);
 
   const toggleSelectMode = () => {
@@ -127,21 +147,65 @@ export default function MyPageScreen({ navigation }) {
                 return;
               }
 
-              const uid = tag.id;
+              const cardUid = tag.id;
+              const newCardUid = tag.id; // ← この行があるか確認
+              const email = auth.currentUser.email;
 
-              // FirestoreにUIDを保存
-              await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                cardUid: uid,
-                isEnrolled: true,
-                enrolledAt: new Date().toISOString(),
-                affiliation: '学生',
-              });
+              console.log('カードUID:', cardUid);
+              console.log('メールアドレス:', email);
 
-              Alert.alert('完了', '学生証を紐づけました！\n次回から学生証でログインできます。');
+              // GAS経由でNFC紐づけ
+              const response = await fetch(
+                GAS_URL + '?action=linkNfc&email=' + encodeURIComponent(email) + '&cardUid=' + cardUid,
+                { redirect: 'follow' }
+              );
+              const result = await response.json();
+              console.log('GAS結果:', JSON.stringify(result));
+
+              if (result.success) {
+                setCardUid(newCardUid);
+                Alert.alert('完了', '学生証を紐づけました！\n次回から学生証でログインできます。');
+              } else {
+                Alert.alert('エラー', result.message || '紐づけに失敗しました');
+              }
+
             } catch (error) {
+              console.error('エラー:', error.message);
               Alert.alert('エラー', 'NFC読み取りに失敗しました: ' + error.message);
             } finally {
               NfcManager.cancelTechnologyRequest().catch(() => {});
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleUnlinkNfc = () => {
+    Alert.alert(
+      '紐づけ解除',
+      '学生証の紐づけを解除しますか？\n解除後はNFCログインができなくなります。',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '解除する',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(
+                GAS_URL + '?action=unlinkNfc&email=' + encodeURIComponent(auth.currentUser.email),
+                { redirect: 'follow' }
+              );
+              const result = await response.json();
+
+              if (result.success) {
+                setCardUid(null); // ← ローカルのStateを更新
+                Alert.alert('完了', '学生証の紐づけを解除しました');
+              } else {
+                Alert.alert('エラー', result.message || '解除に失敗しました');
+              }
+            } catch (error) {
+              Alert.alert('エラー', '解除に失敗しました: ' + error.message);
             }
           }
         }
@@ -161,13 +225,31 @@ export default function MyPageScreen({ navigation }) {
         <Text style={styles.profileEditButtonText}>プロフィールを編集する</Text>
       </TouchableOpacity>
 
-      {/* 学生証の紐づけ */}
+    {loadingNfc ? (
+      <ActivityIndicator size="small" color="#06534B" />
+    ) : cardUid ? (
+      // 紐づけ済みの場合
+      <View style={styles.nfcLinkedContainer}>
+        <View style={styles.nfcLinkedInfo}>
+          <Text style={styles.nfcLinkedTitle}>🎓 学生証紐づけ済み</Text>
+          <Text style={styles.nfcLinkedUid}>UID: {cardUid}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.nfcUnlinkButton}
+          onPress={handleUnlinkNfc}
+        >
+          <Text style={styles.nfcUnlinkButtonText}>解除</Text>
+        </TouchableOpacity>
+      </View>
+    ) : (
+      // 未紐づけの場合
       <TouchableOpacity
         style={styles.nfcLinkButton}
         onPress={handleLinkNfc}
       >
         <Text style={styles.nfcLinkButtonText}>🎓 学生証を紐づける</Text>
       </TouchableOpacity>
+    )}
 
       {/* 出品中の商品 */}
       <View style={styles.sectionHeader}>
@@ -571,6 +653,43 @@ const styles = StyleSheet.create({
   nfcLinkButtonText: {
     color: '#06534B',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  nfcLinkedContainer: {
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#06534B',
+    borderRadius: 8,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 12,
+  },
+  nfcLinkedInfo: {
+    flex: 1,
+  },
+  nfcLinkedTitle: {
+    color: '#06534B',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  nfcLinkedUid: {
+    color: '#06534B',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  nfcUnlinkButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#FF6B6B',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  nfcUnlinkButtonText: {
+    color: '#FF6B6B',
+    fontSize: 13,
     fontWeight: 'bold',
   },
 });
