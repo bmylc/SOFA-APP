@@ -19,6 +19,8 @@ export default function DetailScreen({ route, navigation }) {
 
   const liked = isFavorite(id);
   const isMyProduct = auth.currentUser.email === seller;
+  const [tradeNumber, setTradeNumber] = useState(null);
+  const [reservedChatId, setReservedChatId] = useState(null);
 
   useEffect(() => {
     getUserName(seller).then(name => setSellerName(name));
@@ -28,6 +30,8 @@ export default function DetailScreen({ route, navigation }) {
     const unsubscribe = onSnapshot(doc(db, 'products', id), (snap) => {
       if (snap.exists()) {
         setStatus(snap.data().status || 'available');
+        setTradeNumber(snap.data().tradeNumber || null);
+        setReservedChatId(snap.data().reservedChatId || null); // ← 追加
       }
     });
     return unsubscribe;
@@ -60,6 +64,19 @@ export default function DetailScreen({ route, navigation }) {
     };
     checkSeller();
   }, [seller]);
+
+  // 取引番号を表示できるか判定
+  const canSeeTradeNumber = () => {
+    if (!tradeNumber) return false;
+    if (isMyProduct) return true; // 出品者は常に表示
+
+    // 買い手は自分のチャットIDが reservedChatId と一致する場合のみ
+    if (hasChat && chatInfo) {
+      const myChatId = [auth.currentUser.uid, seller].sort().join('_') + '_' + id;
+      return myChatId === reservedChatId;
+    }
+    return false;
+  };
 
   const handleContact = async () => {
     const currentUser = auth.currentUser;
@@ -215,9 +232,13 @@ export default function DetailScreen({ route, navigation }) {
           <Text style={styles.name}>{name}</Text>
         </View>
 
-        {status === 'reserved' && (
-          <View style={styles.reservedBanner}>
-            <Text style={styles.reservedBannerText}>🤝 売約済み・対面取引待ち</Text>
+        {status === 'reserved' && canSeeTradeNumber() && (
+          <View style={styles.tradeNumberBanner}>
+            <Text style={styles.tradeNumberBannerLabel}>取引番号</Text>
+            <Text style={styles.tradeNumberBannerValue}>{tradeNumber}</Text>
+            <Text style={styles.tradeNumberBannerHint}>
+              対面取引の際にこの番号をお互いに確認してください
+            </Text>
           </View>
         )}
         {status === 'sold' && (
@@ -519,5 +540,30 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#06534B',
     fontWeight: 'bold',
+  },
+  tradeNumberBanner: {
+    backgroundColor: '#E8F5E9',
+    padding: 16,
+    alignItems: 'center',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#ddd',
+  },
+  tradeNumberBannerLabel: {
+    fontSize: 12,
+    color: '#06534B',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  tradeNumberBannerValue: {
+    fontSize: 22,
+    color: '#06534B',
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  tradeNumberBannerHint: {
+    fontSize: 11,
+    color: '#666',
+    textAlign: 'center',
   },
 });

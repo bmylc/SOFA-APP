@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useUsers } from '../context/UserContext';
+import { generateTradeNumber } from '../utils/generateTradeNumber';
 
 
 
@@ -34,6 +35,7 @@ export default function ChatScreen({ route }) {
     price: false,       // 価格に双方合意している
     condition: false,   // 商品の状態を確認した
   });
+  const [tradeNumber, setTradeNumber] = useState(null);
 
   // 出品者名を事前に取得
   useEffect(() => {
@@ -135,6 +137,7 @@ export default function ChatScreen({ route }) {
     const unsubscribe = onSnapshot(doc(db, 'products', productId), (snap) => {
       if (snap.exists()) {
         setProductStatus(snap.data().status || 'available');
+        setTradeNumber(snap.data().tradeNumber || null); // ← 追加
       }
     });
     return unsubscribe;
@@ -168,15 +171,43 @@ export default function ChatScreen({ route }) {
         {
           text: '完了にする',
           onPress: async () => {
+            setChecklistVisible(false);
+            setChecklist({ confirmed: false, meetup: false, price: false, condition: false });
+
             try {
+              const tradeNumber = generateTradeNumber(); // ← 取引番号を生成
+
+              // 商品を売約済みに更新（取引番号を追加）
               await updateDoc(doc(db, 'products', productId), {
-                status: 'sold',
+                status: 'reserved',
+                reservedChatId: chatId,
+                tradeNumber: tradeNumber, // ← 追加
+                tradeNumberIssuedAt: serverTimestamp(), // ← 追加
               });
+
+              // 売約した買い手へのメッセージ（取引番号を含める）
               await addDoc(collection(db, 'chats', chatId, 'messages'), {
-                text: '✅ 取引が完了しました。ありがとうございました！',
+                text: `🤝 売約済みになりました！\n\n取引番号：${tradeNumber}\n\nキャンパスでの対面取引の際にお互いの取引番号を確認してください。`,
                 senderId: 'system',
                 createdAt: serverTimestamp(),
               });
+
+              // 他の買い手へのメッセージ
+              const chatRef = collection(db, 'chats');
+              const q = query(chatRef, where('productId', '==', productId));
+              const snapshot = await getDocs(q);
+
+              snapshot.docs.forEach(async (chatDoc) => {
+                const otherChatId = chatDoc.data().chatId;
+                if (otherChatId !== chatId) {
+                  await addDoc(collection(db, 'chats', otherChatId, 'messages'), {
+                    text: '😔 申し訳ありませんが、この商品は他の方との取引が決まりました。またの機会にお願いします。',
+                    senderId: 'system',
+                    createdAt: serverTimestamp(),
+                  });
+                }
+              });
+
             } catch (error) {
               Alert.alert('エラー', '更新に失敗しました');
             }
@@ -307,15 +338,20 @@ export default function ChatScreen({ route }) {
                 setChecklistVisible(false);
                 setChecklist({ confirmed: false, meetup: false, price: false, condition: false });
                 try {
+                  // ← 取引番号を生成
+                  const tradeNumber = generateTradeNumber();
+
                   // 商品を売約済みに更新
                   await updateDoc(doc(db, 'products', productId), {
                     status: 'reserved',
                     reservedChatId: chatId,
+                    tradeNumber: tradeNumber,           // ← 追加
+                    tradeNumberIssuedAt: serverTimestamp(), // ← 追加
                   });
 
-                  // 売約した買い手へのメッセージ
+                  // 売約した買い手へのメッセージ（取引番号を含める）
                   await addDoc(collection(db, 'chats', chatId, 'messages'), {
-                    text: '🤝 出品者が「売約済み」に設定しました。キャンパスでの対面取引の日時・場所を決めましょう！',
+                    text: `🤝 売約済みになりました！\n\n取引番号：${tradeNumber}\n\nキャンパスでの対面取引の際にお互いの取引番号を確認してください。`,
                     senderId: 'system',
                     createdAt: serverTimestamp(),
                   });
@@ -674,5 +710,24 @@ cancelReserveButtonText: {
   textAlign:'center',
   fontSize: 12,
   fontWeight: 'bold',
+},
+tradeNumberContainer: {
+  marginTop: 0,
+  backgroundColor: '#E8F5E9',
+  borderRadius: 6,
+  padding: 6,
+  borderWidth: 1,
+  borderColor: '#06534B',
+},
+tradeNumberLabel: {
+  fontSize: 10,
+  color: '#06534B',
+  fontWeight: 'bold',
+},
+tradeNumber: {
+  fontSize: 14,
+  color: '#06534B',
+  fontWeight: 'bold',
+  letterSpacing: 1,
 },
 });
