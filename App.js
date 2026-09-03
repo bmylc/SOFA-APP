@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, ActivityIndicator, View } from 'react-native';
+import { Text, ActivityIndicator, View, TouchableOpacity } from 'react-native';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { FavoritesProvider } from './context/FavoritesContext';
 import { UserProvider } from './context/UserContext';
-import BannedScreen from './screens/BannedScreen';
+
+// 既存の画面
 import HomeScreen from './screens/HomeScreen';
 import DetailScreen from './screens/DetailScreen';
 import SearchScreen from './screens/SearchScreen';
@@ -20,13 +21,20 @@ import ChatScreen from './screens/ChatScreen';
 import ChatListScreen from './screens/ChatListScreen';
 import EditProductScreen from './screens/EditProductScreen';
 import ProfileEditScreen from './screens/ProfileEditScreen';
+import BannedScreen from './screens/BannedScreen';
 import NfcLoginScreen from './screens/NfcLoginScreen';
+
+// 新規画面
+import HomeSelectScreen from './screens/HomeSelectScreen';
+import CampusScreen from './screens/CampusScreen';
+import AdvertiserListScreen from './screens/AdvertiserListScreen';
+import AdvertiserDetailScreen from './screens/AdvertiserDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const MainStack = createNativeStackNavigator();
+const CampusStackNavigator = createNativeStackNavigator(); // ← 追加
 const Tab = createBottomTabNavigator();
 
-// ホームのスタックナビゲーター（Detail は MainScreen 側に一本化）
 function HomeStack() {
   return (
     <Stack.Navigator>
@@ -35,7 +43,6 @@ function HomeStack() {
   );
 }
 
-// 未ログイン時のスタック（ログイン・会員登録）
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -55,7 +62,6 @@ function AuthStack() {
   );
 }
 
-// ログイン後のタブ
 function MainTab() {
   return (
     <Tab.Navigator
@@ -68,50 +74,105 @@ function MainTab() {
       <Tab.Screen
         name="HomeTab"
         component={HomeStack}
-        options={{
+        options={({ navigation }) => ({
           title: 'ホーム',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🏠</Text>,
-        }}
+          headerShown: true,
+          headerTitle: 'フリマ',
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('HomeSelect')}
+              style={{ marginLeft: 16 }}
+            >
+              <Text style={{ color: '#06534B', fontSize: 14, fontWeight: 'bold' }}>
+                ← トップ
+              </Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Tab.Screen
         name="Search"
         component={SearchScreen}
-        options={{
+        options={({ navigation }) => ({
           title: '検索',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>🔍</Text>,
           headerShown: true,
           headerTitle: '検索',
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('HomeSelect')}
+              style={{ marginLeft: 16 }}
+            >
+              <Text style={{ color: '#06534B', fontSize: 14, fontWeight: 'bold' }}>
+                ← トップ
+              </Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Tab.Screen
         name="MyPage"
         component={MyPageScreen}
-        options={{
+        options={({ navigation }) => ({
           title: 'マイページ',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>👤</Text>,
           headerShown: true,
           headerTitle: 'マイページ',
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('HomeSelect')}
+              style={{ marginLeft: 16 }}
+            >
+              <Text style={{ color: '#06534B', fontSize: 14, fontWeight: 'bold' }}>
+                ← トップ
+              </Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
       <Tab.Screen
         name="Sell"
         component={SellScreen}
-        options={{
+        options={({ navigation }) => ({
           title: '出品',
           tabBarIcon: ({ color }) => <Text style={{ fontSize: 20, color }}>📷</Text>,
           headerShown: true,
           headerTitle: '出品する',
-        }}
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('HomeSelect')}
+              style={{ marginLeft: 16 }}
+            >
+              <Text style={{ color: '#06534B', fontSize: 14, fontWeight: 'bold' }}>
+                ← トップ
+              </Text>
+            </TouchableOpacity>
+          ),
+        })}
       />
     </Tab.Navigator>
   );
 }
 
-// タブの外側に Detail を置き、どのタブ（ホーム・検索・マイページ）からでも詳細画面に遷移できるようにする
+// ← CampusStack を追加
+function CampusStack() {
+  return (
+    <CampusStackNavigator.Navigator screenOptions={{ headerShown: false }}>
+      <CampusStackNavigator.Screen name="CampusHome" component={CampusScreen} />
+      <CampusStackNavigator.Screen name="AdvertiserList" component={AdvertiserListScreen} />
+      <CampusStackNavigator.Screen name="AdvertiserDetail" component={AdvertiserDetailScreen} />
+    </CampusStackNavigator.Navigator>
+  );
+}
+
 function MainScreen() {
   return (
     <MainStack.Navigator screenOptions={{ headerShown: false }}>
-      <MainStack.Screen name="MainTab" component={MainTab} />
+      {/* ← HomeSelect を最初の画面に */}
+      <MainStack.Screen name="HomeSelect" component={HomeSelectScreen} />
+      <MainStack.Screen name="Flea" component={MainTab} />
+      <MainStack.Screen name="Campus" component={CampusStack} />
       <MainStack.Screen
         name="Detail"
         component={DetailScreen}
@@ -178,7 +239,6 @@ export default function App() {
         setUser(user);
         setLoading(false);
 
-        // BANステータスをリアルタイムで監視
         const userRef = doc(db, 'users', user.uid);
         const unsubscribeUser = onSnapshot(userRef, (snap) => {
           console.log('Firestoreドキュメント存在:', snap.exists());
