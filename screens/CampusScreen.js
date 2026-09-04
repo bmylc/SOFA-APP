@@ -33,7 +33,7 @@ export default function CampusScreen({ navigation }) {
         {/* 右上にマイページボタン */}
         <TouchableOpacity
         style={styles.myPageButton}
-        onPress={() => navigation.navigate('Flea', { screen: 'MyPage' })}
+        onPress={() => navigation.navigate('MyPageStandalone')}
         >
         <Text style={styles.myPageButtonText}>👤 マイページ</Text>
         </TouchableOpacity>

@@ -14,6 +14,7 @@ import HomeScreen from './screens/HomeScreen';
 import DetailScreen from './screens/DetailScreen';
 import SearchScreen from './screens/SearchScreen';
 import MyPageScreen from './screens/MyPageScreen';
+import MyPageScreenStandalone from './screens/MyPageScreenStandalone';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import SellScreen from './screens/SellScreen';
@@ -121,7 +122,7 @@ function MainTab() {
           headerTitle: 'マイページ',
           headerLeft: () => (
             <TouchableOpacity
-              onPress={() => navigation.navigate('HomeSelect')}
+              onPress={() => navigation.navigate('HomeSelect')} // ← navigate から goBack に変更
               style={{ marginLeft: 16 }}
             >
               <Text style={{ color: '#06534B', fontSize: 14, fontWeight: 'bold' }}>
@@ -219,6 +220,16 @@ function MainScreen() {
         options={{
           headerShown: true,
           title: 'プロフィール編集',
+          headerStyle: { backgroundColor: '#fff' },
+          headerTintColor: '#333',
+        }}
+      />
+      <MainStack.Screen
+        name="MyPageStandalone"
+        component={MyPageScreenStandalone}
+        options={{
+          headerShown: true,
+          title: 'マイページ',
           headerStyle: { backgroundColor: '#fff' },
           headerTintColor: '#333',
         }}
