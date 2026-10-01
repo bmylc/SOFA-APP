@@ -28,6 +28,12 @@ yarn-error.*
 build.log
 prebuild.log
 
+# API keys / secrets
+Api key*.txt
+
+# Claude Code personal settings
+.claude/settings.local.json
+
 # macOS
 .DS_Store
 *.pem

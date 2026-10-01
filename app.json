@@ -4,7 +4,7 @@
     "slug": "fleamarket-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/SOFA_ICON_V3.jpg",
+    "icon": "./assets/ICONV4.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -21,7 +21,7 @@
         "android.permission.NFC"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/SOFA_ADAPTIVEICON_V1.jpg",
+        "foregroundImage": "./assets/ADAPTIVEICONV3.png",
         "backgroundColor": "#06534B"
       },
       "package": "com.hokanama.fleamarketapp",

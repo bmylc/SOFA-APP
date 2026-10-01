@@ -30,7 +30,7 @@ export function validateProductName(name) {
 // 商品説明のバリデーション
 export function validateDescription(description) {
   if (!description || description.trim() === '') return '商品説明を入力してください';
-  if (description.trim().length < 10) return '商品説明は10文字以上にしてください';
+  if (description.trim().length < 1) return '商品説明は10文字以上にしてください';
   return null;
 }
 

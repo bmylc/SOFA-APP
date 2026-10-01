@@ -4,7 +4,7 @@ import {
   validateDescription,
   generateChatId,
   filterProducts,
-  getPriceLimit, // ← 追加
+  getPriceLimit
 } from '../utils/validators';
 
 // 価格バリデーションのテスト

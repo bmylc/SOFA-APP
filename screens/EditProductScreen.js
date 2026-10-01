@@ -19,7 +19,15 @@ const CONDITIONS = [
 ];
 
 const CATEGORIES = [
-  'レディース', 'メンズ', 'バッグ', 'シューズ', 'アクセサリー', 'その他',
+  '教科書',
+  '参考書',
+  'スマホ・タブレット',
+  'PC',
+  '授業に必要な衣類・道具',
+  '文房具',
+  '衣類(メンズ)',
+  '衣類(レディース)',
+  'その他',
 ];
 
 export default function EditProductScreen({ route, navigation }) {
@@ -62,7 +70,6 @@ export default function EditProductScreen({ route, navigation }) {
       Alert.alert('エラー', 'ギャラリーへのアクセスを許可してください');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -156,15 +163,15 @@ export default function EditProductScreen({ route, navigation }) {
       <Text style={styles.sectionTitle}>カテゴリ</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {CATEGORIES.map((c) => (
+          {CATEGORIES.filter(c => c !== 'すべて').map((c) => (
             <TouchableOpacity
               key={c}
               style={[styles.categoryButton, category === c && styles.categoryButtonActive]}
               onPress={() => setCategory(c)}
             >
-              <Text style={[styles.categoryText, category === c && styles.categoryTextActive]}>
-                {c}
-              </Text>
+            <Text style={[styles.categoryText, category === c && styles.categoryTextActive]}>
+              {c}
+            </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -332,7 +339,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fff', // ← 白背景を明示的に指定
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
@@ -423,28 +430,28 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   categoryButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  categoryButton: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  categoryButtonActive: {
-    backgroundColor: '#06534B',
-    borderColor: '#06534B',
-  },
-  categoryText: {
-    fontSize: 13,
-    color: '#555',
-  },
-  categoryTextActive: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  gap: 8,
+},
+categoryButton: {
+  backgroundColor: '#fff',
+  borderRadius: 20,
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  borderWidth: 1,
+  borderColor: '#e0e0e0',
+},
+categoryButtonActive: {
+  backgroundColor: '#06534B',
+  borderColor: '#06534B',
+},
+categoryText: {
+  fontSize: 13,
+  color: '#555',
+},
+categoryTextActive: {
+  color: '#fff',
+  fontWeight: 'bold',
+},
 });

@@ -6,20 +6,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     padding: 16,
   },
-  input: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 0.5,
-    borderColor: '#ddd',
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 24,
     marginTop: 8,
   },
-  message: {
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#999',
+    marginBottom: 12,
+  },
+  empty: {
     textAlign: 'center',
     color: '#999',
     marginTop: 32,
     fontSize: 14,
+  },
+  item: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  itemName: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  itemPrice: {
+    fontSize: 14,
+    color: '#FF6B6B',
+    fontWeight: 'bold',
   },
 });
 export default styles; // ← 追加

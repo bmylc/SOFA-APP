@@ -19,12 +19,14 @@ const CONDITIONS = [
 ];
 
 const CATEGORIES = [
-  'すべて',
-  'レディース',
-  'メンズ',
-  'バッグ',
-  'シューズ',
-  'アクセサリー',
+  '教科書',
+  '参考書',
+  'スマホ・タブレット',
+  'PC',
+  '授業に必要な衣類・道具',
+  '文房具',
+  '衣類(メンズ)',
+  '衣類(レディース)',
   'その他',
 ];
 
@@ -33,11 +35,11 @@ export default function SellScreen({ navigation }) {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [condition, setCondition] = useState(CONDITIONS[0]);
-  const [category, setCategory] = useState(CATEGORIES[1]);
   const [imageUri, setImageUri] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [meetupLocation, setMeetupLocation] = useState(null); // ← 選択した場所
+  const [category, setCategory] = useState(CATEGORIES[1]);
+  const [meetupLocation, setMeetupLocation] = useState(null); // ← 選択した建物
   const [meetupDetail, setMeetupDetail] = useState('');       // ← 自由記述
   const [showOtherInput, setShowOtherInput] = useState(false);
 
@@ -58,7 +60,6 @@ export default function SellScreen({ navigation }) {
       Alert.alert('エラー', 'ギャラリーへのアクセスを許可してください');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -72,15 +73,13 @@ export default function SellScreen({ navigation }) {
     }
   };
 
-  // カテゴリが変わったら価格上限を更新
   const priceLimit = getPriceLimit(category);
 
   const handleSell = async () => {
     const nameError = validateProductName(name);
     if (nameError) { Alert.alert('エラー', nameError); return; }
 
-    // ← カテゴリを渡して上限チェック
-    const priceError = validatePrice(price, category);
+    const priceError = validatePrice(price);
     if (priceError) { Alert.alert('エラー', priceError); return; }
 
     const descriptionError = validateDescription(description);
@@ -96,51 +95,42 @@ export default function SellScreen({ navigation }) {
       return;
     }
 
-    setLoading(true);
-    try {
-      // 画像をCloudinaryにアップロード
-      const imageUrl = await uploadImage(imageBase64);
 
-      // Firestoreに商品データを保存
-      await addDoc(collection(db, 'products'), {
-        name: name.trim(),
-        price: parseInt(price),
-        description: description.trim(),
-        condition,
-        category,
-        imageUrl,
-        seller: auth.currentUser.email,
-        status: 'available', // available / reserved / sold
-        meetupLocation: meetupLocation.name,   // ← 場所名
-        meetupDetail: meetupDetail.trim(),      // ← 自由記述
-        createdAt: serverTimestamp(),
-      });
-
-      Alert.alert('成功', '出品しました！', [
-        {
-          text: 'OK',
-          onPress: () => {
-            // 入力をリセット
-            setName('');
-            setPrice('');
-            setDescription('');
-            setCondition(CONDITIONS[0]);
-            setCategory(CATEGORIES[1]);
-            setImageUri(null);
-            setImageBase64(null);
-            setMeetupLocation(null);
-            setMeetupDetail('');
-            setShowOtherInput(false);
-            navigation.goBack();
-          }
+  setLoading(true);
+  try {
+    const imageUrl = await uploadImage(imageBase64);
+    await addDoc(collection(db, 'products'), {
+      name: name.trim(),
+      price: parseInt(price),
+      description: description.trim(),
+      condition,
+      category,
+      imageUrl,
+      seller: auth.currentUser.email,
+      status: 'available',
+      meetupLocation: meetupLocation.name,   // ← 建物名
+      meetupDetail: meetupDetail.trim(),      // ← 自由記述
+      createdAt: serverTimestamp(),
+    });
+    Alert.alert('成功', '出品しました！', [
+      {
+        text: 'OK', onPress: () => {
+          setName('');
+          setPrice('');
+          setDescription('');
+          setCondition(CONDITIONS[0]);
+          setImageUri(null);
+          setImageBase64(null);
+          navigation.goBack();
         }
-      ]);
-    } catch (error) {
-      showError(error, handleSell); // ← 再試行ボタン付きエラー
-    } finally {
-      setLoading(false);
-    }
-  };
+      }
+    ]);
+  } catch (error) {
+    showError(error, handleSell); // ← 再試行ボタン付きエラー
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -164,7 +154,6 @@ export default function SellScreen({ navigation }) {
         onChangeText={setName}
       />
 
-      {/* カテゴリで出品上限が決まるので価格より先に選ぶ */}
       <Text style={styles.sectionTitle}>カテゴリ</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
         <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -174,9 +163,9 @@ export default function SellScreen({ navigation }) {
               style={[styles.categoryButton, category === c && styles.categoryButtonActive]}
               onPress={() => setCategory(c)}
             >
-              <Text style={[styles.categoryText, category === c && styles.categoryTextActive]}>
-                {c}
-              </Text>
+            <Text style={[styles.categoryText, category === c && styles.categoryTextActive]}>
+              {c}
+            </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -191,6 +180,7 @@ export default function SellScreen({ navigation }) {
         onChangeText={setPrice}
         keyboardType="numeric"
       />
+      
       {/* ← 上限金額をリアルタイム表示 */}
       <View style={styles.priceLimitContainer}>
         <Text style={styles.priceLimitText}>
@@ -229,44 +219,43 @@ export default function SellScreen({ navigation }) {
         numberOfLines={4}
       />
 
-      {/* 受け渡し場所（全ての場所をフラットにボタンで並べる） */}
-      <Text style={styles.sectionTitle}>
-        受け渡し希望場所
-      </Text>
+    {/* 受け渡し場所 */}
+    <Text style={styles.sectionTitle}>
+      受け渡し希望場所
+    </Text>
 
-      <View style={styles.locationButtons}>
-        {locations.locations.map((loc) => (
-          <TouchableOpacity
-            key={loc.id}
-            style={[
-              styles.locationButton,
-              meetupLocation?.id === loc.id && styles.locationButtonActive
-            ]}
-            onPress={() => handleLocationSelect(loc)}
-          >
-            <Text style={[
-              styles.locationButtonText,
-              meetupLocation?.id === loc.id && styles.locationButtonTextActive
-            ]}>
-              {loc.name}
-            </Text>
-          </TouchableOpacity>
-        ))}
+    <View style={styles.locationButtons}>
+      {locations.locations.map((loc) => (
+        <TouchableOpacity
+          key={loc.id}
+          style={[
+            styles.locationButton,
+            meetupLocation?.id === loc.id && styles.locationButtonActive
+          ]}
+          onPress={() => handleLocationSelect(loc)}
+        >
+          <Text style={[
+            styles.locationButtonText,
+            meetupLocation?.id === loc.id && styles.locationButtonTextActive
+          ]}>
+            {loc.name}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+
+    {/* その他を選んだときだけテキストボックス */}
+    {showOtherInput && (
+      <View style={styles.otherInputContainer}>
+        <Text style={styles.sectionTitle}>場所を入力してください</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="例：大宮駅"
+          value={meetupDetail}
+          onChangeText={setMeetupDetail}
+        />
       </View>
-
-      {/* その他を選んだときだけテキストボックス */}
-      {showOtherInput && (
-        <View style={styles.otherInputContainer}>
-          <Text style={styles.sectionTitle}>場所を入力してください</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="例：大宮駅"
-            placeholderTextColor="#999"
-            value={meetupDetail}
-            onChangeText={setMeetupDetail}
-          />
-        </View>
-      )}
+    )}
 
       <TouchableOpacity
         style={styles.sellButton}
@@ -320,13 +309,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fff', // ← 白背景を明示的に指定
     borderRadius: 8,
     padding: 14,
     fontSize: 16,
     borderWidth: 0.5,
     borderColor: '#ddd',
-    color: '#333', // ← 入力文字色も明示的に指定
+    color: '#333',
+    placeholderTextColor:'#333' ,// ← 入力文字色も明示的に指定
   },
   textArea: {
     height: 120,
@@ -354,25 +344,37 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  sellButton: {
+    backgroundColor: '#06534B',
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 24,
+  },
+  sellButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
   categoryButton: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderWidth: 0.5,
-    borderColor: '#ddd',
+  backgroundColor: '#fff',
+  borderRadius: 20,
+  paddingVertical: 8,
+  paddingHorizontal: 16,
+  borderWidth: 0.5,
+  borderColor: '#ddd',
   },
   categoryButtonActive: {
-    backgroundColor: '#06534B',
-    borderColor: '#06534B',
+  backgroundColor: '#06534B',
+  borderColor: '#06534B',
   },
   categoryText: {
-    fontSize: 13,
-    color: '#333',
+  fontSize: 13,
+  color: '#333',
   },
   categoryTextActive: {
-    color: '#fff',
-    fontWeight: 'bold',
+  color: '#fff',
+  fontWeight: 'bold',
   },
   locationButtons: {
     flexDirection: 'row',
@@ -399,10 +401,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  otherInputContainer: {
-    marginTop: 4,
-    marginBottom: 8,
-  },
   priceLimitContainer: {
     marginTop: 6,
     flexDirection: 'row',
@@ -416,18 +414,6 @@ const styles = StyleSheet.create({
   priceLimitError: {
     fontSize: 12,
     color: '#06534B',
-    fontWeight: 'bold',
-  },
-  sellButton: {
-    backgroundColor: '#06534B',
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  sellButtonText: {
-    color: '#fff',
-    fontSize: 18,
     fontWeight: 'bold',
   },
 });

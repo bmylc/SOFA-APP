@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Linking } from 'react-native';
 
-const REGISTER_URL = 'https://example.com/register'; // ← あとで変更するURL
+const REGISTER_URL = 'https://script.google.com/macros/s/AKfycbwzyE_55R5mvp2yvuc4w4FSA1NDzISH1UzK-xCVIlXNskBEQvwZyl45mEYJtOaIeFme/exec'; // ← あとで変更するURL
 
 export default function RegisterScreen() {
   const handleOpenBrowser = async () => {

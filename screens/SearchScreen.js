@@ -8,9 +8,16 @@ import { db } from '../firebase';
 import { isEnrolledStudent } from '../utils/checkEnrollment';
 
 const CATEGORIES = [
-  'すべて', 'レディース', 'メンズ', 'バッグ', 'シューズ', 'アクセサリー', 'その他',
+  '教科書',
+  '参考書',
+  'スマホ・タブレット',
+  'PC',
+  '授業に必要な衣類・道具',
+  '文房具',
+  '衣類(メンズ)',
+  '衣類(レディース)',
+  'その他',
 ];
-
 
 // HomeScreen.js と SearchScreen.js 共通
 const ProductCard = memo(function ProductCard({ item, onPress }) {
