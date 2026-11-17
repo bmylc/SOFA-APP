@@ -25,12 +25,13 @@ describe('validatePrice', () => {
   });
 
   test('上限を超える場合エラーを返す', () => {
-    expect(validatePrice('10000000')).toBe('価格は999万円以下にしてください');
+    // カテゴリ未指定はデフォルト上限（¥50,000）
+    expect(validatePrice('50001')).toBe('この商品の出品上限は¥50,000です');
   });
 
   test('正常な価格の場合nullを返す', () => {
     expect(validatePrice('1000')).toBeNull();
-    expect(validatePrice('9999999')).toBeNull();
+    expect(validatePrice('50000')).toBeNull();
     expect(validatePrice('1')).toBeNull();
   });
 });
@@ -111,11 +112,12 @@ describe('filterProducts', () => {
 
 describe('validatePrice with category', () => {
   test('カテゴリの上限を超える場合エラーを返す', () => {
-    expect(validatePrice('25000', 'シューズ')).toBe('シューズの出品上限は¥20,000です');
+    expect(validatePrice('25000', 'PC')).toBe('PCの出品上限は¥20,000です');
   });
 
   test('カテゴリの上限内なら通る', () => {
-    expect(validatePrice('15000', 'シューズ')).toBeNull();
+    expect(validatePrice('15000', 'PC')).toBeNull();
+    expect(validatePrice('20000', 'PC')).toBeNull();
   });
 
   test('カテゴリ未指定はデフォルト上限を使う', () => {
@@ -125,8 +127,9 @@ describe('validatePrice with category', () => {
 
 describe('getPriceLimit', () => {
   test('カテゴリごとの上限を返す', () => {
-    expect(getPriceLimit('アクセサリー')).toBe(10000);
-    expect(getPriceLimit('バッグ')).toBe(50000);
+    expect(getPriceLimit('文房具')).toBe(10000);
+    expect(getPriceLimit('教科書')).toBe(30000);
+    expect(getPriceLimit('PC')).toBe(20000);
   });
 
   test('未知のカテゴリはデフォルト値を返す', () => {
