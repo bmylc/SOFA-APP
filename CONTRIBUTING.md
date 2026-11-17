@@ -78,7 +78,25 @@ PR を作ると GitHub Actions（CI）が自動でテスト・Expo チェック�
 
 ## 5. APK のビルド
 
-APK はクラウド（EAS Build）で作ります。Expo アカウントが必要で、プロジェクトのオーナーから Expo の組織に招待してもらってください。
+### Docker でビルド（ローカル・無料）
+Linux 版の Android SDK を入れたコンテナで APK を作ります。PC に Android Studio は不要です。
+
+1. Android SDK のライセンス（https://developer.android.com/studio/terms ）を読み、同意する場合は `.env` に次を追加します。
+   ```
+   ACCEPT_ANDROID_SDK_LICENSES=yes
+   ```
+2. ビルドします（初回はイメージ作成と依存関係のダウンロードで 20〜30 分、2 回目以降は数分）。
+   ```bash
+   docker compose run --rm apk
+   ```
+3. `dist-apk/SOFA-日時.apk` に APK が出力されます。
+
+- デバッグ用キーストアで署名されるため、手元の端末での確認用です（ストア配布には使えません）。
+- Docker Desktop のメモリ割り当てが少ないと失敗することがあります。8GB 以上を推奨します。
+- SDK のバージョンを上げたときは `docker compose --profile apk build apk` でイメージを作り直してください。
+
+### EAS でビルド（クラウド）
+Expo アカウントが必要で、プロジェクトのオーナーから Expo の組織に招待してもらってください。
 ```bash
 docker compose run --rm app npx eas-cli build -p android --profile preview
 ```

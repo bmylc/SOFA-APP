@@ -48,3 +48,6 @@ Api key*.txt
 # generated native folders
 /ios
 /android
+
+# Docker で作った APK
+/dist-apk

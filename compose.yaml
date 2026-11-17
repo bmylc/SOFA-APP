@@ -20,5 +20,21 @@ services:
     stdin_open: true
     tty: true
 
+  # APK ビルド（docker compose run --rm apk）。通常の up では起動しない
+  apk:
+    profiles: ["apk"]
+    build:
+      context: .
+      dockerfile: Dockerfile.android
+      args:
+        ACCEPT_ANDROID_SDK_LICENSES: ${ACCEPT_ANDROID_SDK_LICENSES:-no}
+    image: sofa-app-apk
+    volumes:
+      - .:/app
+      - apk_work:/work
+      - gradle_cache:/root/.gradle
+
 volumes:
   node_modules:
+  apk_work:
+  gradle_cache:

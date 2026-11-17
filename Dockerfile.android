@@ -1,0 +1,52 @@
+# SOFA の APK ビルド用コンテナ（Linux 版 Android SDK / hermesc を使用）
+# 使い方は CONTRIBUTING.md の「APK のビルド（Docker）」を参照
+FROM node:24-bookworm-slim
+
+# Android SDK のライセンスに同意した人だけがビルドできるようにする
+#   .env に ACCEPT_ANDROID_SDK_LICENSES=yes を書いた場合のみ同意して続行
+ARG ACCEPT_ANDROID_SDK_LICENSES=no
+RUN if [ "$ACCEPT_ANDROID_SDK_LICENSES" != "yes" ]; then \
+      echo "Android SDK のライセンスに同意する必要があります。" >&2; \
+      echo "内容: https://developer.android.com/studio/terms" >&2; \
+      echo "同意する場合は .env に ACCEPT_ANDROID_SDK_LICENSES=yes を追加してください。" >&2; \
+      exit 1; \
+    fi
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+       openjdk-17-jdk-headless git rsync unzip curl ca-certificates procps \
+  && rm -rf /var/lib/apt/lists/* \
+  && ln -s "$(dirname "$(dirname "$(readlink -f "$(which javac)")")")" /opt/java
+
+ENV JAVA_HOME=/opt/java \
+    ANDROID_HOME=/opt/android-sdk \
+    ANDROID_SDK_ROOT=/opt/android-sdk \
+    EXPO_NO_TELEMETRY=1 \
+    CI=1
+ENV PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+
+# Android コマンドラインツール（チェックサム検証付き）
+ARG CMDLINE_TOOLS_ZIP=commandlinetools-linux-16111833_latest.zip
+ARG CMDLINE_TOOLS_SHA1=e025545c62a8e64c7559119566a569fb1dec5f60
+RUN mkdir -p "$ANDROID_HOME/cmdline-tools" \
+  && curl -fsSL -o /tmp/cmdline-tools.zip "https://dl.google.com/android/repository/$CMDLINE_TOOLS_ZIP" \
+  && echo "$CMDLINE_TOOLS_SHA1  /tmp/cmdline-tools.zip" | sha1sum -c - \
+  && unzip -q /tmp/cmdline-tools.zip -d "$ANDROID_HOME/cmdline-tools" \
+  && mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest" \
+  && rm /tmp/cmdline-tools.zip
+
+# React Native 0.88 / Expo SDK 58 が使う SDK・NDK
+# （バージョンは node_modules/react-native/gradle/libs.versions.toml に合わせる）
+RUN yes | sdkmanager --licenses > /dev/null \
+  && sdkmanager --install \
+       "platform-tools" \
+       "platforms;android-37.0" \
+       "build-tools;37.0.0" \
+       "ndk;27.1.12297006" \
+       "cmake;3.22.1" > /dev/null
+
+COPY scripts/build-apk.sh /usr/local/bin/build-apk
+RUN sed -i 's/\r$//' /usr/local/bin/build-apk && chmod +x /usr/local/bin/build-apk
+
+WORKDIR /work
+CMD ["build-apk"]
