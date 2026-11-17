@@ -72,6 +72,8 @@ git push -u origin feature/やること
 ```
 GitHub で PR を作成し、もう一人がレビューしてからマージします。
 
+PR を作ると GitHub Actions（CI）が自動でテスト・Expo チェック・Docker ビルドを実行します。CI が失敗している PR はマージしないでください。push 前に手元でも `docker compose run --rm app npm test` を実行しておくと安心です。
+
 コミットメッセージの頭には `feat:`（機能）/ `fix:`（修正）/ `docs:`（ドキュメント）/ `chore:`（その他）を付けます。
 
 ## 5. APK のビルド
