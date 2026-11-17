@@ -12,8 +12,29 @@ import {
 import { db, auth } from '../firebase';
 import { useUsers } from '../context/UserContext';
 import { generateTradeNumber } from '../utils/generateTradeNumber';
+import {
+  generateCompletionToken, buildTradeQrPayload,
+  parseTradeQrPayload, verifyTradeQr,
+} from '../utils/tradeQr';
+import ChecklistModal from '../components/ChecklistModal';
+import TradeQrModal from '../components/TradeQrModal';
+import QrScannerModal from '../components/QrScannerModal';
 
+// 出品者：売約済みにする前のチェックリスト
+const SELLER_CHECKLIST = [
+  { key: 'confirmed', label: '買い手と取引内容を確認した' },
+  { key: 'meetup', label: 'キャンパスでの待ち合わせ場所・日時を決めた' },
+  { key: 'price', label: '価格に双方合意している' },
+  { key: 'condition', label: '商品の状態を買い手に説明した' },
+];
 
+// 買い手：取引完了QRを表示する前のチェックリスト
+const BUYER_CHECKLIST = [
+  { key: 'received', label: '商品を受け取った' },
+  { key: 'condition', label: '商品の状態が説明どおりであることを確認した' },
+  { key: 'payment', label: '代金の支払いを済ませた' },
+  { key: 'tradeNumber', label: '売り手と取引番号が一致することを確認した' },
+];
 
 export default function ChatScreen({ route }) {
   const { chatId, productName, seller, productId } = route.params;
@@ -27,15 +48,16 @@ export default function ChatScreen({ route }) {
   const [sellerName, setSellerName] = useState(''); // ← 出品者名
   const [messageNames, setMessageNames] = useState({}); // ← メッセージの表示名
   const [checklistVisible, setChecklistVisible] = useState(false);
+  const [buyerChecklistVisible, setBuyerChecklistVisible] = useState(false);
+  const [qrVisible, setQrVisible] = useState(false);
+  const [scannerVisible, setScannerVisible] = useState(false);
   const [userNames, setUserNames] = useState({})
   const { getUserName } = useUsers();
-  const [checklist, setChecklist] = useState({
-    confirmed: false,   // 相手と取引内容を確認した
-    meetup: false,      // キャンパスでの待ち合わせ場所を決めた
-    price: false,       // 価格に双方合意している
-    condition: false,   // 商品の状態を確認した
-  });
   const [tradeNumber, setTradeNumber] = useState(null);
+  const [reservedChatId, setReservedChatId] = useState(null);
+  const [completionToken, setCompletionToken] = useState(null);
+  // このチャットの買い手が売約相手か
+  const isReservedBuyer = !isSeller && productStatus === 'reserved' && reservedChatId === chatId;
 
   // 出品者名を事前に取得
   useEffect(() => {
@@ -138,6 +160,8 @@ export default function ChatScreen({ route }) {
       if (snap.exists()) {
         setProductStatus(snap.data().status || 'available');
         setTradeNumber(snap.data().tradeNumber || null); // ← 追加
+        setReservedChatId(snap.data().reservedChatId || null);
+        setCompletionToken(snap.data().completionToken || null);
       }
     });
     return unsubscribe;
@@ -162,65 +186,139 @@ export default function ChatScreen({ route }) {
     setChecklistVisible(true); // ← モーダルを表示するだけ
   };
 
-  const handleComplete = () => {
-    Alert.alert(
-      '取引完了',
-      '対面取引は完了しましたか？完了すると商品が一覧から削除されます。',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '完了にする',
-          onPress: async () => {
-            setChecklistVisible(false);
-            setChecklist({ confirmed: false, meetup: false, price: false, condition: false });
+  // 出品者：チェックリスト完了後に売約済みにする
+  const reserveProduct = async () => {
+    setChecklistVisible(false);
+    try {
+      const tradeNumber = generateTradeNumber(); // ← 取引番号を生成
 
-            try {
-              const tradeNumber = generateTradeNumber(); // ← 取引番号を生成
+      // 商品を売約済みに更新
+      await updateDoc(doc(db, 'products', productId), {
+        status: 'reserved',
+        reservedChatId: chatId,
+        tradeNumber: tradeNumber,
+        tradeNumberIssuedAt: serverTimestamp(),
+        completionToken: null,
+      });
 
-              // 商品を売約済みに更新（取引番号を追加）
-              await updateDoc(doc(db, 'products', productId), {
-                status: 'reserved',
-                reservedChatId: chatId,
-                tradeNumber: tradeNumber, // ← 追加
-                tradeNumberIssuedAt: serverTimestamp(), // ← 追加
-              });
+      // 売約した買い手へのメッセージ（取引番号を含める）
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        text: `🤝 売約済みになりました！\n\n取引番号：${tradeNumber}\n\nキャンパスでの対面取引の際にお互いの取引番号を確認してください。\n商品を受け取ったら、買い手は「売約済み」ボタンからチェックリストに回答し、表示されたQRコードを売り手に読み取ってもらってください。`,
+        senderId: 'system',
+        createdAt: serverTimestamp(),
+      });
 
-              // 売約した買い手へのメッセージ（取引番号を含める）
-              await addDoc(collection(db, 'chats', chatId, 'messages'), {
-                text: `🤝 売約済みになりました！\n\n取引番号：${tradeNumber}\n\nキャンパスでの対面取引の際にお互いの取引番号を確認してください。`,
-                senderId: 'system',
-                createdAt: serverTimestamp(),
-              });
+      // 他の買い手のチャットにもメッセージを送る
+      const chatRef = collection(db, 'chats');
+      const q = query(chatRef, where('productId', '==', productId));
+      const snapshot = await getDocs(q);
 
-              // 他の買い手へのメッセージ
-              const chatRef = collection(db, 'chats');
-              const q = query(chatRef, where('productId', '==', productId));
-              const snapshot = await getDocs(q);
-
-              snapshot.docs.forEach(async (chatDoc) => {
-                const otherChatId = chatDoc.data().chatId;
-                if (otherChatId !== chatId) {
-                  await addDoc(collection(db, 'chats', otherChatId, 'messages'), {
-                    text: '😔 申し訳ありませんが、この商品は他の方との取引が決まりました。またの機会にお願いします。',
-                    senderId: 'system',
-                    createdAt: serverTimestamp(),
-                  });
-                }
-              });
-
-            } catch (error) {
-              Alert.alert('エラー', '更新に失敗しました');
-            }
-          }
-        },
-      ]
-    );
+      snapshot.docs.forEach(async (chatDoc) => {
+        const otherChatId = chatDoc.data().chatId;
+        if (otherChatId !== chatId) {
+          await addDoc(collection(db, 'chats', otherChatId, 'messages'), {
+            text: '😔 申し訳ありませんが、この商品は他の方との取引が決まりました。またの機会にお願いします。',
+            senderId: 'system',
+            createdAt: serverTimestamp(),
+          });
+        }
+      });
+    } catch (error) {
+      console.error('エラー:', error.message);
+      Alert.alert('エラー', '更新に失敗しました');
+    }
   };
 
-  const handleCancelReserve = () => {
+  // 買い手：「売約済み」ボタン。チェックリスト未回答なら表示、回答済みならQRを再表示
+  const handleBuyerReceived = () => {
+    if (completionToken) {
+      setQrVisible(true);
+    } else {
+      setBuyerChecklistVisible(true);
+    }
+  };
+
+  // 買い手：チェックリストにすべて回答 → 取引完了トークンを発行してQRを表示
+  const issueCompletionQr = async () => {
+    setBuyerChecklistVisible(false);
+    try {
+      const token = generateCompletionToken();
+      await updateDoc(doc(db, 'products', productId), {
+        completionToken: token,
+        buyerConfirmedAt: serverTimestamp(),
+      });
+      setCompletionToken(token);
+      setQrVisible(true);
+
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        text: '📋 買い手が受け取りチェックリストを完了しました。\n売り手は「取引完了」ボタンから買い手のQRコードを読み取ってください。',
+        senderId: 'system',
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('エラー:', error.message);
+      Alert.alert('エラー', 'QRコードの発行に失敗しました');
+    }
+  };
+
+  // 出品者：「取引完了」ボタン → QR読み取り
+  const handleOpenScanner = () => {
+    if (!completionToken) {
+      Alert.alert(
+        'QRコード待ち',
+        '買い手が受け取りチェックリストを完了すると、買い手の画面にQRコードが表示されます。\n表示されたら、もう一度「取引完了」を押して読み取ってください。'
+      );
+      return;
+    }
+    setScannerVisible(true);
+  };
+
+  // 出品者：QRを読み取ったら検証して売買成立にする
+  // 戻り値 true で読み取りを続ける（無効なQRだった場合）
+  const handleQrScanned = async (data) => {
+    const error = verifyTradeQr(parseTradeQrPayload(data), {
+      productId,
+      chatId,
+      status: productStatus,
+      completionToken,
+    });
+    if (error) {
+      return new Promise((resolve) => {
+        Alert.alert('読み取りエラー', error, [{ text: 'OK', onPress: () => resolve(true) }]);
+      });
+    }
+
+    try {
+      await updateDoc(doc(db, 'products', productId), {
+        status: 'sold',
+        soldAt: serverTimestamp(),
+        soldChatId: chatId,
+        completionToken: null,
+      });
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        text: `✅ 売買が成立しました！\n\n取引番号：${tradeNumber || '-'}\n\nご利用ありがとうございました。`,
+        senderId: 'system',
+        createdAt: serverTimestamp(),
+      });
+      setScannerVisible(false);
+      Alert.alert('取引完了', '売買が成立しました');
+      return false;
+    } catch (e) {
+      console.error('エラー:', e.message);
+      return new Promise((resolve) => {
+        Alert.alert('エラー', '取引完了の更新に失敗しました', [{ text: 'OK', onPress: () => resolve(true) }]);
+      });
+    }
+  };
+
+  // 売約キャンセル（出品者・買い手の両方から実行できる）
+  const handleCancelReserve = (by = 'seller') => {
+  const isBuyerCancel = by === 'buyer';
   Alert.alert(
     '売約キャンセル',
-    '売約済みを取り消しますか？\n他のオファーも再度受け付けられるようになります。',
+    isBuyerCancel
+      ? '売約を取り消しますか？\n商品は再び出品中に戻ります。'
+      : '売約済みを取り消しますか？\n他のオファーも再度受け付けられるようになります。',
     [
       { text: 'キャンセル', style: 'cancel' },
       {
@@ -232,11 +330,15 @@ export default function ChatScreen({ route }) {
             await updateDoc(doc(db, 'products', productId), {
               status: 'available',
               reservedChatId: null,
+              completionToken: null,
             });
+            setQrVisible(false);
 
             // このチャットにキャンセルメッセージ
             await addDoc(collection(db, 'chats', chatId, 'messages'), {
-              text: '❌ 出品者が売約を取り消しました。引き続きご検討ください。',
+              text: isBuyerCancel
+                ? '❌ 買い手が売約を取り消しました。商品は出品中に戻りました。'
+                : '❌ 出品者が売約を取り消しました。引き続きご検討ください。',
               senderId: 'system',
               createdAt: serverTimestamp(),
             });
@@ -250,7 +352,7 @@ export default function ChatScreen({ route }) {
               const otherChatId = chatDoc.data().chatId;
               if (otherChatId !== chatId) {
                 await addDoc(collection(db, 'chats', otherChatId, 'messages'), {
-                  text: '🔄 出品者が売約を取り消しました。再度オファーを検討してみてください！',
+                  text: '🔄 売約が取り消されました。再度オファーを検討してみてください！',
                   senderId: 'system',
                   createdAt: serverTimestamp(),
                 });
@@ -277,6 +379,24 @@ export default function ChatScreen({ route }) {
             出品者：{userNames[seller] || seller}
           </Text>
         </View>
+        {productStatus === 'sold' && (isSeller || reservedChatId === chatId) && (
+          <View style={styles.soldBadge}>
+            <Text style={styles.soldBadgeText}>✅ 取引完了</Text>
+          </View>
+        )}
+        {/* 売約相手の買い手のみボタンを表示 */}
+        {isReservedBuyer && (
+          <View style={styles.sellerButtons}>
+            <TouchableOpacity style={styles.cancelReserveButton} onPress={() => handleCancelReserve('buyer')}>
+              <Text style={styles.cancelReserveButtonText}>売約キャンセル</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.completeButton} onPress={handleBuyerReceived}>
+              <Text style={styles.completeButtonText}>
+                {completionToken ? 'QRコードを表示' : '売約済み'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {/* 出品者のみボタンを表示 */}
         {isSeller && productStatus === 'available' && (
           <TouchableOpacity style={styles.reserveButton} onPress={handleReserve}>
@@ -285,118 +405,53 @@ export default function ChatScreen({ route }) {
         )}
         {isSeller && productStatus === 'reserved' && (
           <View style={styles.sellerButtons}>
-            <TouchableOpacity style={styles.cancelReserveButton} onPress={handleCancelReserve}>
+            <TouchableOpacity style={styles.cancelReserveButton} onPress={() => handleCancelReserve('seller')}>
               <Text style={styles.cancelReserveButtonText}>売約キャンセル</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.completeButton} onPress={handleComplete}>
+            <TouchableOpacity style={styles.completeButton} onPress={handleOpenScanner}>
               <Text style={styles.completeButtonText}>取引完了</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
-      {/* チェックリストモーダル */}
-      {checklistVisible && (
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>売約済みにする前に確認</Text>
-            <Text style={styles.modalSubtitle}>以下をすべて確認してから売約済みにしてください</Text>
+      {/* 出品者：売約済みにする前のチェックリスト */}
+      <ChecklistModal
+        visible={checklistVisible}
+        title="売約済みにする前に確認"
+        subtitle="以下をすべて確認してから売約済みにしてください"
+        items={SELLER_CHECKLIST}
+        confirmLabel="売約済みにする ✓"
+        onConfirm={reserveProduct}
+        onCancel={() => setChecklistVisible(false)}
+      />
 
-            {[
-              { key: 'confirmed', label: '買い手と取引内容を確認した' },
-              { key: 'meetup', label: 'キャンパスでの待ち合わせ場所・日時を決めた' },
-              { key: 'price', label: '価格に双方合意している' },
-              { key: 'condition', label: '商品の状態を買い手に説明した' },
-            ].map((item) => (
-              <TouchableOpacity
-                key={item.key}
-                style={styles.checkItem}
-                onPress={() => setChecklist(prev => ({
-                  ...prev,
-                  [item.key]: !prev[item.key]
-                }))}
-              >
-                <View style={[
-                  styles.checkbox,
-                  checklist[item.key] && styles.checkboxChecked
-                ]}>
-                  {checklist[item.key] && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
-                </View>
-                <Text style={styles.checkLabel}>{item.label}</Text>
-              </TouchableOpacity>
-            ))}
+      {/* 買い手：受け取りチェックリスト → QR表示 */}
+      <ChecklistModal
+        visible={buyerChecklistVisible}
+        title="受け取り確認"
+        subtitle="すべての項目を確認すると、売り手に見せる取引完了QRコードが表示されます"
+        items={BUYER_CHECKLIST}
+        confirmLabel="QRコードを表示 ✓"
+        onConfirm={issueCompletionQr}
+        onCancel={() => setBuyerChecklistVisible(false)}
+      />
 
-            <TouchableOpacity
-              style={[
-                styles.modalButton,
-                !Object.values(checklist).every(Boolean) && styles.modalButtonDisabled
-              ]}
-              disabled={!Object.values(checklist).every(Boolean)}
-                onPress={async () => {
-                setChecklistVisible(false);
-                setChecklist({ confirmed: false, meetup: false, price: false, condition: false });
-                try {
-                  // ← 取引番号を生成
-                  const tradeNumber = generateTradeNumber();
+      {/* 買い手：取引完了QRコード（売買成立で自動的に閉じる） */}
+      <TradeQrModal
+        visible={qrVisible && isReservedBuyer}
+        value={completionToken ? buildTradeQrPayload({ productId, chatId, tradeNumber, token: completionToken }) : null}
+        tradeNumber={tradeNumber}
+        onClose={() => setQrVisible(false)}
+      />
 
-                  // 商品を売約済みに更新
-                  await updateDoc(doc(db, 'products', productId), {
-                    status: 'reserved',
-                    reservedChatId: chatId,
-                    tradeNumber: tradeNumber,           // ← 追加
-                    tradeNumberIssuedAt: serverTimestamp(), // ← 追加
-                  });
+      {/* 出品者：買い手のQRコードを読み取る */}
+      <QrScannerModal
+        visible={scannerVisible}
+        onScanned={handleQrScanned}
+        onClose={() => setScannerVisible(false)}
+      />
 
-                  // 売約した買い手へのメッセージ（取引番号を含める）
-                  await addDoc(collection(db, 'chats', chatId, 'messages'), {
-                    text: `🤝 売約済みになりました！\n\n取引番号：${tradeNumber}\n\nキャンパスでの対面取引の際にお互いの取引番号を確認してください。`,
-                    senderId: 'system',
-                    createdAt: serverTimestamp(),
-                  });
-
-                  // 他の買い手のチャットにもメッセージを送る
-                  const chatRef = collection(db, 'chats');
-                  const q = query(chatRef, where('productId', '==', productId));
-                  const snapshot = await getDocs(q);
-
-                  snapshot.docs.forEach(async (chatDoc) => {
-                    const otherChatId = chatDoc.data().chatId;
-                    if (otherChatId !== chatId) {
-                      await addDoc(collection(db, 'chats', otherChatId, 'messages'), {
-                        text: '😔 申し訳ありませんが、この商品は他の方との取引が決まりました。またの機会にお願いします。',
-                        senderId: 'system',
-                        createdAt: serverTimestamp(),
-                      });
-                    }
-                  });
-
-                } catch (error) {
-                  console.error('エラー:', error.message);
-                  Alert.alert('エラー', '更新に失敗しました');
-                }
-              }}
-            >
-              <Text style={styles.modalButtonText}>
-                {Object.values(checklist).every(Boolean)
-                  ? '売約済みにする ✓'
-                  : `残り${4 - Object.values(checklist).filter(Boolean).length}項目`}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.modalCancelButton}
-              onPress={() => {
-                setChecklistVisible(false);
-                setChecklist({ confirmed: false, meetup: false, price: false, condition: false });
-              }}
-            >
-              <Text style={styles.modalCancelButtonText}>キャンセル</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
 
       {/* メッセージ一覧 */}
       <FlatList
@@ -708,6 +763,21 @@ cancelReserveButton: {
 cancelReserveButtonText: {
   color: '#06534B',
   textAlign:'center',
+  fontSize: 12,
+  fontWeight: 'bold',
+},
+soldBadge: {
+  marginTop: 8,
+  alignSelf: 'flex-start',
+  backgroundColor: '#E8F5E9',
+  borderRadius: 8,
+  paddingVertical: 4,
+  paddingHorizontal: 10,
+  borderWidth: 1,
+  borderColor: '#06534B',
+},
+soldBadgeText: {
+  color: '#06534B',
   fontSize: 12,
   fontWeight: 'bold',
 },
