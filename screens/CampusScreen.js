@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 const CATEGORIES = [
   { id: 'coop', name: '生協', icon: '🏪', single: true },
   { id: 'kitchencar', name: 'キッチンカー', icon: '🚚', single: false },
-  { id: 'cafeteria', name: '食堂', icon: '🍽', single: true },
   { id: 'bakery', name: 'ベーカリー', icon: '🍞', single: true },
   { id: 'circle', name: '学生団体', icon: '🎓', single: false },
 ];
