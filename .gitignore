@@ -39,6 +39,7 @@ Api key*.txt
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript

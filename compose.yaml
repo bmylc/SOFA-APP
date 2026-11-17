@@ -1,0 +1,24 @@
+# 使い方は CONTRIBUTING.md を参照
+#   docker compose up            … Expo 開発サーバーを起動（スマホの Expo Go / 開発ビルドから接続）
+#   docker compose run --rm app npm test   … テストを実行
+services:
+  app:
+    build: .
+    image: sofa-app-dev
+    ports:
+      - "8081:8081"
+    environment:
+      # スマホから接続するための PC の LAN 内 IP アドレス（.env に書く）
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_LAN_IP:?.env に HOST_LAN_IP を設定してください}
+      # Windows/macOS からのバインドマウントでは変更通知が届かないことがあるためポーリングで監視
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      # node_modules はコンテナ内（Linux 用）のものを使い、ホストの node_modules と混ぜない
+      - node_modules:/app/node_modules
+    stdin_open: true
+    tty: true
+
+volumes:
+  node_modules:
