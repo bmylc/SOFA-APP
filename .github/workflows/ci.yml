@@ -32,8 +32,15 @@ jobs:
       - name: テスト
         run: npm test -- --ci
 
+      # Expo のパッチ版が公開されるたびにバージョン差分で失敗するため、
+      # 失敗しても CI 全体は落とさず警告として表示する（直すときは `npx expo install --fix`）
       - name: Expo の依存関係・設定チェック
-        run: npx expo-doctor@latest
+        continue-on-error: true
+        run: |
+          if ! npx expo-doctor@latest; then
+            echo "::warning title=expo-doctor::Expo の依存関係に差分があります。npx expo install --fix で更新してください"
+            exit 1
+          fi
 
   docker:
     name: Docker イメージのビルド
